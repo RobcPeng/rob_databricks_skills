@@ -5,7 +5,7 @@ How to Use:
 - Drag these folders to "databricks-skills" (https://github.com/databricks-solutions/ai-dev-kit)
 - Load the skill ("Please use Serverless Guardrails" | "Please use dbldatagen")
 
-This works in conjunction with ai-dev-kit - recommended approach is wrting to parquet for a proper bronze layer for ingestion.
+This works in conjunction with ai-dev-kit - recommended approach is writing to parquet for a proper bronze layer for ingestion.
 
 For the ai-dev-kit - I've found that creating the catalog/schemas/folder structure through MCP gives more context to claude during your session.
 
