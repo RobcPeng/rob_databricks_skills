@@ -1,96 +1,85 @@
-Under Construction -
+# Databricks & Spark Skills for Claude Code
 
-How to Use:
+Custom skills that extend [Claude Code](https://docs.anthropic.com/en/docs/claude-code) with Databricks and Spark expertise. Designed to work with the [Databricks AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit).
 
-- Drag these folders to "databricks-skills" (https://github.com/databricks-solutions/ai-dev-kit)
-- Load the skill ("Please use Serverless Guardrails" | "Please use dbldatagen")
+## Skills
 
 This works in conjunction with ai-dev-kit - recommended approach is writing to parquet for a proper bronze layer for ingestion.
 
-For the ai-dev-kit - I've found that creating the catalog/schemas/folder structure through MCP gives more context to claude during your session.
+### databricks-practice-skill
 
-Example Log Below:
+An interactive coaching skill that turns Claude Code into a Spark & Databricks practice environment. Generates exercises, validates solutions, and provides feedback.
 
-# ai_practice_2 — Session Steps & Lessons Learned
+| Mode | Example Prompts |
+|------|----------------|
+| **Quick Drill** | "quick drill", "5 min practice" |
+| **Deep Practice** | "practice window functions", "help me learn Delta Lake" |
+| **Mock Exam** | "quiz me", "certification prep" |
+| **Code Review** | "review my code", "what's wrong with this" |
+| **Gap Assessment** | "what should I work on?" |
 
-## Steps Completed
+Covers: DataFrames, Spark SQL, Joins, Window Functions, Delta Lake, Structured Streaming, Auto Loader, SDP/DLT, Unity Catalog, Performance Tuning, Jobs, MLflow, and more.
 
-### 1. Catalog & Schema Setup
+### spark-job-optimization
 
-- Created Unity Catalog `ai_practice_2` using R2 managed storage
-  ```
-  r2://[REDACTED].com/
-  ```
-- Created schemas with numeric prefixes for ordering: `00_bronze`, `01_silver`, `02_gold`
-- Added `storage_root` variable to `databricks.yml`
+A comprehensive reference for understanding, diagnosing, and optimizing Apache Spark jobs on Databricks. Covers foundational internals through advanced troubleshooting.
 
-### 2. Bundle File Structure
+| Topic | File |
+|-------|------|
+| Spark Internals | `1-spark-internals-foundation.md` |
+| Reading Query Plans | `2-reading-query-plans.md` |
+| Spark UI Guide | `3-spark-ui-guide.md` |
+| Databricks Diagnostics | `4-databricks-diagnostics.md` |
+| Join Optimization | `5-join-optimization.md` |
+| Shuffle & Partitioning | `6-shuffle-and-partitioning.md` |
+| Memory & Spill | `7-memory-and-spill.md` |
+| I/O & Storage | `8-io-and-storage.md` |
+| Symptom Troubleshooting | `9-symptom-troubleshooting.md` |
+| Hands-on Labs | `10-hands-on-labs.md` |
 
-- Created proper folder layout for a production DAB:
-  ```
-  src/
-    notebooks/
-      setup/standup.py
-      00_bronze/generate_iot_data.py
-    pipelines/
-      silver/silver_devices.py
-      silver/silver_readings.py
-      silver/silver_alerts.py
-      gold/gold_device_daily_stats.py
-      gold/gold_alert_daily_summary.py
-    dashboards/iot_dashboard.lvdash.json
-  resources/
-    pipelines/pipeline.yml
-    dashboards/iot_dashboard.yml
-    jobs/              (deprecated main_job.yml removed)
-  ```
-- Added `dbldatagen>=0.4.0` to `pyproject.toml` dependencies
+## Installation
 
-### 3. Serverless Compute Configuration
+### With the AI Dev Kit (recommended)
 
-- Removed all `job_cluster_key` / `job_clusters` from jobs → replaced with `environment_key` + `environments.spec`
-- Set `serverless: true` in pipeline resource
-- Confirmed free tier SQL warehouse name: `Serverless Starter Warehouse`
-- Added `warehouse_id` lookup variable pointing to correct warehouse
+If you already have the [AI Dev Kit](https://github.com/databricks-solutions/ai-dev-kit) installed, copy the skill folders into your project's `.claude/skills/` directory:
 
-### 4. Volume Creation
+```bash
+# From your project directory (where .claude/ exists)
+cp -r databricks-practice-skill .claude/skills/databricks-practice
+cp -r spark-job-optimization .claude/skills/spark-job-optimization
+```
 
-- Created `ai_practice_2.00_bronze.pipeline_metadata` (MANAGED) for Auto Loader schema location
-- Pipeline configuration references: `/Volumes/ai_practice_2/00_bronze/pipeline_metadata/schemas`
+### Standalone
 
-### 5. SDP Pipeline — Silver Layer
+```bash
+# Create the skills directory if it doesn't exist
+mkdir -p .claude/skills
 
-- Split by layer into separate `.py` files (one table per file) — best practice
-- `silver_devices` → Materialized View (active devices only, batch)
-- `silver_readings_clean` → Streaming Table (incremental, quality-filtered)
-- `silver_alerts_clean` → Streaming Table (incremental, with derived resolution fields)
-- Used `@dp.expect_or_drop` for inline data quality enforcement
+# Copy the skills
+cp -r databricks-practice-skill .claude/skills/databricks-practice
+cp -r spark-job-optimization .claude/skills/spark-job-optimization
+```
 
-### 6. SDP Pipeline — Gold Layer
+The practice skill works without the AI Dev Kit in "review mode" only (code review without live execution). With the AI Dev Kit MCP server, exercises run against your real Databricks workspace.
 
-- `gold_device_daily_stats` → Materialized View, aggregates readings by device × metric × day
-  - Enriched with device metadata (`device_type`, `region`, etc.) via `F.broadcast(silver_devices)`
-- `gold_alert_daily_summary` → Materialized View, aggregates alerts by type × severity × day
-  - Derives `open_count`, `resolution_rate`
+## Usage
 
-### 7. Data Generation
+Open Claude Code in a project where the skills are installed and try:
 
-- Used `dbldatagen>=0.4.0` for 10M+ row IoT synthetic dataset
-- Three bronze tables: `devices` (10K), `sensor_readings` (10M), `alerts` (500K)
-- Device type correlated to metric values via broadcast join + `F.randn()`
-- Alert resolution time uses `dist.Exponential(rate=1/12)` (mean ~12 hrs)
-- ~20% open alerts via probabilistic `_is_resolved` column
-- `%pip install` removed from notebook — declared in job `environments.spec.dependencies`
+```
+> Let's practice Spark
 
-### 8. AI/BI Dashboard
+> Give me a Delta Lake MERGE challenge
 
-- 2 canvas pages + 1 global filters page
-- **Fleet Overview**: 3 KPIs, daily trend lines, severity bar, alert type pie
-- **Sensor Metrics**: 3 KPIs, fleet avg bar chart, device detail table
-- **Global Filters**: date range, metric type, alert severity
-- `dataset_catalog` / `dataset_schema` parameters set in dashboard resource YAML
+> Quiz me — I'm preparing for the DE Associate exam
 
-### 9. Cleanup
+> My Spark job is slow, help me optimize it
 
-- Removed deprecated files: `pipeline.py`, `ingest.py`, `transform.py`, `aggregate.py`, `main_job.yml`
-- Bundle validates clean after each major change
+> Explain this query plan to me
+
+> I'm getting OOM errors on my executor
+```
+
+## License
+
+These skills are provided for educational use. They reference the Databricks AI Dev Kit (Databricks License) and Apache Spark (Apache 2.0 License).
