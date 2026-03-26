@@ -1,6 +1,6 @@
 ---
 name: data-api-poc-builder
-description: "Build proof-of-concept Databricks pipelines, dashboards, and AI/ML demos on top of external Kafka, PostgreSQL, and Neo4j data sources. Use when the user mentions 'POC', 'proof of concept', 'demo pipeline', 'data-api-collector', 'SLED use case', 'fraud detection pipeline', 'streaming dashboard', 'build on Kafka data', 'build on PostgreSQL data', 'build on Neo4j data', 'telemetry pipeline', 'web traffic dashboard', 'student enrollment', 'grant budget', 'citizen services', 'k12 early warning', 'procurement pipeline', 'case management', or wants to build Databricks artifacts that consume from external streaming or database sources."
+description: "ONLY invoke when the user EXPLICITLY asks for 'data-api-poc-builder', 'data-api-collector POC', or '/data-api-poc-builder'. This skill requires external services (Kafka, PostgreSQL, Neo4j via data-api-collector-python) and must NOT be triggered by general mentions of POCs, pipelines, dashboards, streaming, or SLED use cases. Do NOT auto-trigger on ambient keywords."
 ---
 
 # Data API POC Builder
