@@ -1,6 +1,10 @@
 ---
 name: dbldatagen
-description: "Generate large-scale synthetic data using Databricks Labs dbldatagen (Spark-native, declarative). Use when creating test data, demo datasets, or synthetic tables at scale using dbldatagen instead of Faker."
+description: >
+  Generate large-scale synthetic data using Databricks Labs dbldatagen (Spark-native, declarative).
+  Use when creating test data, demo datasets, or synthetic tables at scale using dbldatagen instead
+  of Faker. Triggers on: 'dbldatagen', 'synthetic data', 'generate data', 'test data', 'fake data
+  at scale', 'data generator', 'DataGenerator', 'withColumn spec', 'mock data', 'sample dataset'.
 ---
 
 # Synthetic Data Generation with dbldatagen
@@ -78,6 +82,51 @@ gen = (
 | `data_range=dg.DateRange(...)` | Date range | see DateRange section |
 | `percentNulls=0.05` | Fraction of nulls | `percentNulls=0.05` |
 | `omit=True` | Exclude from output (helper col) | `omit=True` |
+| `numFeatures=(min,max)` | Variable-length array generation | `numFeatures=(1, 6)` |
+| `structType="array"` | Output as array type | `structType="array"` |
+| `format="..."` | String formatting | `format="%05d"` |
+
+### withColumnSpec — Apply to Existing Schema
+
+Use `withColumnSpec` when you have an existing schema and want to define generation rules for specific columns **without renaming or retyping**:
+
+```python
+from pyspark.sql.types import StructType, StructField, StringType, IntegerType, DoubleType
+
+existing_schema = StructType([
+    StructField("customer_id", IntegerType()),
+    StructField("name", StringType()),
+    StructField("balance", DoubleType()),
+])
+
+gen = (
+    dg.DataGenerator(spark, name="from_schema", rows=10_000,
+                     randomSeedMethod="hash_fieldname")
+    .withSchema(existing_schema)
+    .withColumnSpec("customer_id", minValue=10000, maxValue=99999)
+    .withColumnSpec("name", template=r'\w \w')
+    .withColumnSpec("balance", minValue=0, maxValue=50000,
+                    distribution=dist.Gamma(2.0, 5000.0), random=True)
+    .build()
+)
+```
+
+### withColumnSpecs — Bulk Pattern Matching
+
+Apply generation rules to multiple columns at once using pattern matching:
+
+```python
+gen = (
+    dg.DataGenerator(spark, name="bulk", rows=50_000,
+                     randomSeedMethod="hash_fieldname")
+    .withSchema(large_schema)
+    # Apply rules to all string columns matching a pattern
+    .withColumnSpecs(matchTypes=[StringType()], template=r'\w \w')
+    # Apply rules to all integer columns
+    .withColumnSpecs(matchTypes=[IntegerType()], minValue=0, maxValue=1000, random=True)
+    .build()
+)
+```
 
 ## Non-Linear Distributions
 
@@ -110,6 +159,16 @@ import dbldatagen.distributions as dist
             random=True)
 ```
 
+### Distribution Selection Guide
+
+| Distribution | Shape | Use Case | Parameters |
+|-------------|-------|----------|------------|
+| `Gamma(shape, scale)` | Right-skewed | Revenue, order amounts, wait times | shape: peak sharpness, scale: spread |
+| `Normal(mean, stddev)` | Bell curve | Measurements, scores, physical values | mean: center, stddev: spread |
+| `Exponential(rate)` | Steep decay | Inter-arrival times, durations, TTL | rate: 1/mean_value |
+| `Beta(alpha, beta)` | Flexible 0-1 | Rates, probabilities, percentages | alpha>beta: right-skew, alpha<beta: left-skew |
+| Weighted `values` | Categorical | Status, tier, category, region | weights: relative frequencies |
+
 ## Text Templates
 
 Template characters: `d`=digit, `a`=lowercase alpha, `A`=uppercase, `\w`=random word, `\n`=number 0-255, `|`=OR alternative:
@@ -120,6 +179,9 @@ Template characters: `d`=digit, `a`=lowercase alpha, `A`=uppercase, `\w`=random 
 .withColumn("ip_addr",  "string", template=r'\n.\n.\n.\n')
 .withColumn("order_id", "string", template=r'ORD-dddddd')
 .withColumn("cust_id",  "string", template=r'CUST-ddddd')
+.withColumn("sku",      "string", template=r'SKU-AAA-dddd')
+.withColumn("mac_addr", "string", template=r'AA:AA:AA:AA:AA:AA')
+.withColumn("uuid",     "string", template=r'AAAAdddd-dddd-dddd-dddd-AAAAdddddddd')
 ```
 
 Custom word list for realistic domain-specific names:
@@ -211,6 +273,64 @@ Use `baseColumn` + `expr` with CASE WHEN to make attributes correlate logically:
             baseColumn="_res")
 ```
 
+## Complex Types (Structs, Arrays, JSON)
+
+### Struct Columns
+
+```python
+# Method 1: withStructColumn helper (simplest)
+.withColumn("event_type", "string", values=["click", "view", "purchase"], random=True)
+.withColumn("event_ts", "timestamp",
+            data_range=dg.DateRange(START, END, "seconds=1"), random=True)
+.withStructColumn("event_info", fields=['event_type', 'event_ts'])
+
+# Method 2: withStructColumn with field mapping (rename fields)
+.withStructColumn("event_info", fields={
+    'type': 'event_type',
+    'timestamp': 'event_ts'
+})
+
+# Method 3: expr with named_struct (full control)
+.withColumn("address", dg.INFER_DATATYPE,
+            expr="named_struct('street', street, 'city', city, 'state', state)",
+            baseColumn=['street', 'city', 'state'])
+```
+
+### Array Columns
+
+```python
+# Variable-length array of emails (1 to 6 items)
+.withColumn("emails", "string", template=r'\w.\w@\w.com',
+            numFeatures=(1, 6), structType="array")
+
+# Array from helper columns using expr
+.withColumn("r_0", "float", minValue=0, maxValue=100, random=True, omit=True)
+.withColumn("r_1", "float", minValue=0, maxValue=100, random=True, omit=True)
+.withColumn("r_2", "float", minValue=0, maxValue=100, random=True, omit=True)
+.withColumn("observations", "array<float>",
+            expr="slice(array(r_0, r_1, r_2), 1, abs(hash(id)) % 3 + 1)",
+            baseColumn=["r_0", "r_1", "r_2"])
+```
+
+### JSON-Valued Fields
+
+```python
+# Convert a struct to a JSON string column
+.withStructColumn("payload", fields=['event_type', 'event_ts'], asJson=True)
+```
+
+### Type Inference
+
+Use `dg.INFER_DATATYPE` when `expr` determines the type:
+
+```python
+.withColumn("full_name", dg.INFER_DATATYPE,
+            expr="concat(first_name, ' ', last_name)",
+            baseColumn=["first_name", "last_name"])
+
+.withColumn("ingest_ts", dg.INFER_DATATYPE, expr="current_timestamp()")
+```
+
 ## Multi-Table Generation with Referential Integrity
 
 dbldatagen uses **hash-based foreign keys** for referential integrity without joins:
@@ -299,6 +419,160 @@ incident_spec = (
 df_tickets = normal_spec.build().union(incident_spec.build())
 ```
 
+## Constraints
+
+Apply constraints to enforce business rules on generated data:
+
+```python
+# SQL expression constraint — filters rows that violate the condition
+# NOTE: rows parameter is BEFORE constraints. If you need 10K rows and
+# the constraint filters ~20%, generate 12.5K rows.
+spec = (
+    dg.DataGenerator(spark, rows=12500, partitions=4,
+                     randomSeedMethod="hash_fieldname")
+    .withColumn("order_ts", "timestamp",
+                data_range=dg.DateRange(START, END, "hours=1"), random=True)
+    .withColumn("shipping_ts", "timestamp",
+                data_range=dg.DateRange(START, END, "hours=1"), random=True,
+                percentNulls=0.3)
+    .withSqlConstraint("shipping_ts IS NULL OR shipping_ts > order_ts")
+    .build()
+)
+```
+
+**Important:** Constraints modify the spec in-place. If reusing a spec with different constraints, clone it first:
+
+```python
+spec_clone = spec.clone()
+spec_clone.withSqlConstraint("amount > 100")
+```
+
+## Streaming Data Generation
+
+Generate continuous streaming data for testing Structured Streaming or SDP pipelines:
+
+```python
+# Build with streaming enabled — rows parameter is ignored
+streaming_df = (
+    dg.DataGenerator(spark, name="sensor_stream", rows=0, partitions=4,
+                     randomSeedMethod="hash_fieldname")
+    .withColumn("device_id", "string", template=r'DEV-dddddd',
+                uniqueValues=100)
+    .withColumn("temperature", "double", minValue=15.0, maxValue=45.0,
+                distribution=dist.Normal(mean=22.0, stddev=3.0), random=True)
+    .withColumn("humidity", "double", minValue=20.0, maxValue=95.0,
+                distribution=dist.Normal(mean=55.0, stddev=10.0), random=True)
+    .withColumn("event_ts", dg.INFER_DATATYPE, expr="current_timestamp()")
+    .build(withStreaming=True, options={"rowsPerSecond": 500})
+)
+
+# Write to Delta table as continuous stream
+(streaming_df.writeStream
+ .format("delta")
+ .outputMode("append")
+ .option("checkpointLocation", f"/Volumes/{CATALOG}/{SCHEMA}/checkpoints/sensor_stream")
+ .table(f"{CATALOG}.{SCHEMA}.sensor_events"))
+```
+
+**Use with SDP / Delta Live Tables:**
+
+```python
+import dlt
+import dbldatagen as dg
+
+@dlt.table
+def raw_events():
+    return (
+        dg.DataGenerator(spark, name="events", rows=100_000, partitions=4,
+                         randomSeedMethod="hash_fieldname")
+        .withColumn("event_id", "string", template=r'EVT-dddddddd')
+        .withColumn("event_type", "string",
+                    values=["click", "view", "purchase"], weights=[50, 40, 10])
+        .build()
+    )
+```
+
+## Change Data Capture (CDC) Simulation
+
+Generate an initial dataset, then simulate inserts and updates:
+
+```python
+# 1. Generate base dataset
+base_spec = (
+    dg.DataGenerator(spark, rows=10000, partitions=4,
+                     randomSeedMethod="hash_fieldname", randomSeed=42)
+    .withColumn("customer_id", "long", uniqueValues=10000)
+    .withColumn("name", "string", template=r'\w \w', percentNulls=0.01)
+    .withColumn("balance", "decimal(10,2)", minValue=0, maxValue=50000, random=True)
+    .withColumn("created_ts", dg.INFER_DATATYPE, expr="current_timestamp()")
+    .withColumn("memo", dg.INFER_DATATYPE, expr="'original'")
+)
+df_base = base_spec.build()
+df_base.write.format("delta").mode("overwrite").save(f"{VOLUME_PATH}/customers_cdc")
+
+# 2. Generate updates (sample existing + modify)
+max_id = df_base.selectExpr("max(customer_id)").first()[0]
+
+# New inserts (IDs above max)
+insert_spec = (
+    dg.DataGenerator(spark, rows=500, partitions=4,
+                     randomSeedMethod="hash_fieldname", randomSeed=99)
+    .withColumn("customer_id", "long", minValue=max_id + 1, uniqueValues=500)
+    .withColumn("name", "string", template=r'\w \w')
+    .withColumn("balance", "decimal(10,2)", minValue=0, maxValue=50000, random=True)
+    .withColumn("created_ts", dg.INFER_DATATYPE, expr="current_timestamp()")
+    .withColumn("memo", dg.INFER_DATATYPE, expr="'new insert'")
+)
+
+# Updates (sample from existing IDs)
+df_updates = (
+    df_base.sample(0.05)  # 5% of rows get updated
+    .withColumn("balance", F.expr("round(rand() * 50000, 2)"))
+    .withColumn("memo", F.lit("updated"))
+    .withColumn("modified_ts", F.current_timestamp())
+)
+
+# 3. Merge
+df_changes = insert_spec.build().union(df_updates.select(insert_spec.build().columns))
+```
+
+### scriptMerge — Auto-Generate MERGE SQL
+
+```python
+merge_sql = base_spec.scriptMerge(
+    tgtName="customers",
+    srcName="customers_changes",
+    joinExpr="src.customer_id = tgt.customer_id",
+    updateColumns=["name", "balance", "memo"],
+    updateColumnExprs=[("memo", "'merged update'")]
+)
+spark.sql(merge_sql)
+```
+
+## Generating from Existing Schemas (DataAnalyzer)
+
+Reverse-engineer a generation spec from an existing table or DataFrame:
+
+```python
+# Analyze an existing dataset
+df_source = spark.table("production.sales.orders")
+analyzer = dg.DataAnalyzer(sparkSession=spark, df=df_source)
+
+# View statistical summary
+display(analyzer.summarizeToDF())
+
+# Generate code from data (analyzes distributions and ranges)
+generated_code = analyzer.scriptDataGeneratorFromData()
+print(generated_code)
+# Produces a ready-to-use DataGenerator spec matching the source data's patterns
+
+# Generate code from schema only (no data analysis, just types and names)
+schema_code = analyzer.scriptDataGeneratorFromSchema()
+print(schema_code)
+```
+
+**Use case:** You have a production table and want to create synthetic test data with similar shape. DataAnalyzer gives you a starting spec that you can then customize.
+
 ## Storage Destination
 
 ### Ask for Schema Name
@@ -341,6 +615,64 @@ Generate enough rows so patterns survive downstream GROUP BY:
 | Per category | 500+ per category |
 | Per customer | 5–20 events/customer |
 | Total | 10K–50K minimum |
+
+## Domain-Specific Recipe Templates
+
+### E-Commerce (Customers + Orders + Line Items)
+
+```python
+# Customers
+.withColumn("customer_id", LongType(), minValue=10000, uniqueValues=N_CUSTOMERS)
+.withColumn("signup_date", "date", data_range=dg.DateRange("2020-01-01", END, "days=1"), random=True)
+.withColumn("segment", "string", values=["Consumer", "Business", "Enterprise"], weights=[70, 20, 10])
+.withColumn("country", "string", values=["US", "UK", "DE", "FR", "JP"], weights=[50, 15, 12, 10, 8])
+
+# Orders
+.withColumn("order_id", "string", template=r'ORD-dddddddd', uniqueValues=N_ORDERS)
+.withColumn("order_date", "date", data_range=dg.DateRange(START, END, "days=1"), random=True)
+.withColumn("status", "string", values=["completed", "pending", "cancelled", "refunded"], weights=[80, 10, 5, 5])
+.withColumn("channel", "string", values=["web", "mobile", "in-store", "phone"], weights=[45, 35, 15, 5])
+
+# Line Items
+.withColumn("line_id", "string", template=r'LI-dddddddd')
+.withColumn("quantity", "int", minValue=1, maxValue=20, distribution=dist.Exponential(rate=0.5), random=True)
+.withColumn("unit_price", "decimal(10,2)", minValue=0.99, maxValue=999.99, distribution=dist.Gamma(2.0, 50.0), random=True)
+```
+
+### IoT / Sensor Data
+
+```python
+.withColumn("device_id", "string", template=r'SENSOR-dddd', uniqueValues=200)
+.withColumn("location_id", "string", values=[f"LOC-{i:03d}" for i in range(50)], baseColumn="device_id")
+.withColumn("reading_ts", "timestamp", data_range=dg.DateRange(START, END, "seconds=30"), random=True)
+.withColumn("temperature_c", "double", minValue=-10, maxValue=50, distribution=dist.Normal(mean=22, stddev=5), random=True)
+.withColumn("humidity_pct", "double", minValue=10, maxValue=100, distribution=dist.Normal(mean=55, stddev=12), random=True)
+.withColumn("battery_pct", "double", minValue=0, maxValue=100, distribution=dist.Beta(5, 2), random=True)
+.withColumn("anomaly_flag", "boolean", expr="temperature_c > 40 OR humidity_pct > 90", baseColumn=["temperature_c", "humidity_pct"])
+```
+
+### Healthcare / Clinical
+
+```python
+.withColumn("patient_id", "string", template=r'PAT-dddddddd', uniqueValues=5000)
+.withColumn("encounter_date", "date", data_range=dg.DateRange(START, END, "days=1"), random=True)
+.withColumn("encounter_type", "string", values=["outpatient", "inpatient", "emergency", "telehealth"], weights=[50, 15, 10, 25])
+.withColumn("diagnosis_code", "string", template=r'Add.d', values=["A", "B", "C", "D", "E", "F", "G", "H", "I", "J"])
+.withColumn("length_of_stay", "int", minValue=0, maxValue=30, distribution=dist.Exponential(rate=0.3), random=True)
+.withColumn("total_charge", "decimal(10,2)", minValue=100, maxValue=100000, distribution=dist.Gamma(2.0, 5000.0), random=True)
+```
+
+### Financial Transactions
+
+```python
+.withColumn("txn_id", "string", template=r'TXN-dddddddddd', uniqueValues=N_TXNS)
+.withColumn("account_id", "string", template=r'ACCT-dddddddd', uniqueValues=N_ACCOUNTS)
+.withColumn("txn_type", "string", values=["debit", "credit", "transfer", "fee"], weights=[40, 35, 20, 5])
+.withColumn("amount", "decimal(12,2)", minValue=0.01, maxValue=50000, distribution=dist.Gamma(1.5, 200.0), random=True)
+.withColumn("currency", "string", values=["USD", "EUR", "GBP", "JPY"], weights=[60, 20, 10, 10])
+.withColumn("is_fraud", "boolean", expr="case when rand() < 0.02 then true else false end")
+.withColumn("merchant_category", "string", values=["retail", "food", "travel", "services", "online"], weights=[25, 25, 15, 15, 20])
+```
 
 ## Script Structure
 
@@ -603,13 +935,18 @@ After execution, use `get_volume_folder_details` tool to verify:
 
 | Use Case | dbldatagen | Faker |
 |----------|------------|-------|
-| Millions/billions of rows | ✅ Ideal | ❌ Slow |
-| Purely Spark-native pipeline | ✅ | ❌ Needs pandas |
-| Realistic text (names, addresses) | ⚠️ Template-based | ✅ |
-| Complex multi-step business logic | ⚠️ expr can be verbose | ✅ Python loops |
-| Referential integrity at scale | ✅ hash-based | ⚠️ Memory-limited |
-| Reproducibility by default | ✅ randomSeed | ⚠️ Requires seeding |
-| Delta Live Tables support | ✅ | ⚠️ Needs workarounds |
+| Millions/billions of rows | Best choice | Too slow |
+| Purely Spark-native pipeline | Best choice | Needs pandas |
+| Realistic text (names, addresses) | Template-based | Best choice |
+| Complex multi-step business logic | expr can be verbose | Python loops |
+| Referential integrity at scale | hash-based FKs | Memory-limited |
+| Reproducibility by default | randomSeed | Requires seeding |
+| Delta Live Tables / SDP support | Native | Needs workarounds |
+| Streaming data generation | Native (withStreaming) | Not supported |
+| Schema inference from existing data | DataAnalyzer | Not supported |
+| CDC simulation | scriptMerge | Manual |
+| Complex types (struct, array, JSON) | withStructColumn | Manual |
+| Constraints / business rules | withSqlConstraint | Manual |
 
 ## Best Practices
 
@@ -621,12 +958,12 @@ After execution, use `get_volume_folder_details` tool to verify:
 6. **`baseColumnType="hash"` for FK**: Hash the base value to generate unique-but-bounded foreign keys
 7. **`baseColumn` on a string column — avoid; use numeric IDs instead**: `baseColumnType="hash"` works but causes uneven distribution due to hash collisions + modulo mapping. The correct approach is to generate IDs as numeric (`LongType`, `minValue/maxValue`) so dbldatagen can map linearly into the range:
    ```python
-   # ❌ String ID + hash — uneven distribution
+   # Bad: String ID + hash — uneven distribution
    .withColumn("customer_id", "string", template=r'CUST-ddddd', random=True)
    .withColumn("_street_num", "int", minValue=100, maxValue=9999,
                baseColumn="customer_id", baseColumnType="hash", omit=True)
 
-   # ✅ Numeric ID — linear mapping, uniform distribution
+   # Good: Numeric ID — linear mapping, uniform distribution
    .withColumn("customer_id", LongType(), minValue=10000, maxValue=99999, random=True)
    .withColumn("_street_num", "int", minValue=100, maxValue=9999,
                baseColumn="customer_id", omit=True)
@@ -635,15 +972,19 @@ After execution, use `get_volume_folder_details` tool to verify:
    ```python
    .withColumn("order_id", "string", template=r'ORD-dddddddd', uniqueValues=N_ORDERS, random=True)
    ```
-8. **Two-spec union for spikes**: Generate separate specs for normal vs. anomaly periods, then union
-9. **Join for correlated cross-table fields**: After building, join parent's attribute onto child if needed
-10. **Raw data only**: No `total_x`, `sum_x`, `avg_x` — SDP pipeline computes those
-11. **Save to Volume**: Write parquet to `/Volumes/{catalog}/{schema}/raw_data/<name>`
-12. **Dynamic dates**: Always use `datetime.now() - timedelta(days=180)` for last 6 months
-13. **Validate after generation**: Print `.count()` and distribution checks before saving
+9. **Two-spec union for spikes**: Generate separate specs for normal vs. anomaly periods, then union
+10. **Join for correlated cross-table fields**: After building, join parent's attribute onto child if needed
+11. **Raw data only**: No `total_x`, `sum_x`, `avg_x` — SDP pipeline computes those
+12. **Save to Volume**: Write parquet to `/Volumes/{catalog}/{schema}/raw_data/<name>`
+13. **Dynamic dates**: Always use `datetime.now() - timedelta(days=180)` for last 6 months
+14. **Validate after generation**: Print `.count()` and distribution checks before saving
+15. **Use DataAnalyzer for existing tables**: When mimicking production data, start with `scriptDataGeneratorFromData()` then customize
+16. **Constraints need headroom**: Generate ~25% more rows than needed if constraints will filter
 
 ## Related Skills
 
 - **[spark-declarative-pipelines](../spark-declarative-pipelines/SKILL.md)** — build bronze/silver/gold pipelines on top of generated data
 - **[databricks-aibi-dashboards](../databricks-aibi-dashboards/SKILL.md)** — visualize generated data
 - **[databricks-unity-catalog](../databricks-unity-catalog/SKILL.md)** — manage catalogs, schemas, and volumes
+- **[databricks-free-tier-guardrails](../databricks-free-tier-guardrails/SKILL.md)** — compatibility check for serverless compute
+- **[databricks-geospatial](../databricks-geospatial/SKILL.md)** — generate synthetic geo data with lat/lon columns
