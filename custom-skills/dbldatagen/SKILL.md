@@ -1,10 +1,12 @@
 ---
 name: dbldatagen
 description: >
-  Generate large-scale synthetic data using Databricks Labs dbldatagen (Spark-native, declarative).
-  Use when creating test data, demo datasets, or synthetic tables at scale using dbldatagen instead
-  of Faker. Triggers on: 'dbldatagen', 'synthetic data', 'generate data', 'test data', 'fake data
-  at scale', 'data generator', 'DataGenerator', 'withColumn spec', 'mock data', 'sample dataset'.
+  Generate large-scale synthetic data using Databricks Labs dbldatagen (Spark-native, declarative)
+  or Spark + Faker + Pandas UDFs. Use when creating test data, demo datasets, or synthetic tables
+  at scale. Covers both dbldatagen and Faker approaches with guidance on when to use each.
+  Triggers on: 'dbldatagen', 'synthetic data', 'generate data', 'test data', 'fake data',
+  'data generator', 'DataGenerator', 'withColumn spec', 'mock data', 'sample dataset',
+  'Faker', 'fake names', 'fake addresses', 'realistic data', 'Pandas UDF'.
 ---
 
 # Synthetic Data Generation with dbldatagen
@@ -23,15 +25,18 @@ Generate synthetic data for Databricks using **dbldatagen** — a Spark-native, 
 
 **Need a domain template or full example:** See [5-recipes-and-examples.md](5-recipes-and-examples.md).
 
+**Want realistic names/addresses via Faker:** See [6-faker-alternative.md](6-faker-alternative.md).
+
 ## Routing Table
 
 | File | Topic | When to Use |
 |------|-------|-------------|
-| [1-core-api.md](1-core-api.md) | Core API | DataGenerator, withColumn, withColumnSpec, withColumnSpecs, withSchema |
-| [2-distributions-and-text.md](2-distributions-and-text.md) | Distributions & Text | Non-linear distributions, text templates, date ranges |
+| [1-core-api.md](1-core-api.md) | Core API | DataGenerator, withColumn, withColumnSpec, withColumnSpecs, withSchema, standard datasets |
+| [2-distributions-and-text.md](2-distributions-and-text.md) | Distributions & Text | Non-linear distributions, text templates, ILText, Faker integration, date ranges |
 | [3-relationships-and-coherence.md](3-relationships-and-coherence.md) | Relationships | Row coherence, multi-table FKs, event spikes |
 | [4-advanced-features.md](4-advanced-features.md) | Advanced | Complex types, constraints, streaming, CDC, DataAnalyzer |
 | [5-recipes-and-examples.md](5-recipes-and-examples.md) | Recipes | Domain templates, complete example, storage, best practices |
+| [6-faker-alternative.md](6-faker-alternative.md) | Faker | Spark + Faker + Pandas UDFs, realistic text, locales, hybrid approach, complete Faker example |
 
 ## Installation
 
