@@ -96,7 +96,17 @@ echo ""
 
 print_header "Step 3/3 — Installing custom skills"
 
-# Detect scope: check if project-local state exists, otherwise assume global
+# Build list of current custom skill names
+CURRENT_CUSTOM_SKILLS=()
+for skill in "$CUSTOM_SKILLS_DIR"/*/; do
+    if [ -f "$skill/SKILL.md" ]; then
+        CURRENT_CUSTOM_SKILLS+=("$(basename "$skill")")
+    fi
+done
+
+# Manifest file tracks previously installed custom skills for cleanup
+MANIFEST_NAME=".custom-skills-manifest"
+
 INSTALLED_CUSTOM=0
 
 detect_and_install() {
@@ -107,6 +117,29 @@ detect_and_install() {
         local target="$base_dir/$tool_dir"
         if [ -d "$target" ]; then
             print_step "Found $scope_label skills at: $target"
+
+            # Clean up stale custom skills from previous installs
+            local manifest="$target/$MANIFEST_NAME"
+            if [ -f "$manifest" ]; then
+                while IFS= read -r old_skill; do
+                    # Skip empty lines
+                    [ -z "$old_skill" ] && continue
+                    # Check if this old skill is still in current custom-skills/
+                    local still_exists=false
+                    for current in "${CURRENT_CUSTOM_SKILLS[@]}"; do
+                        if [ "$current" = "$old_skill" ]; then
+                            still_exists=true
+                            break
+                        fi
+                    done
+                    if [ "$still_exists" = false ] && [ -d "$target/$old_skill" ]; then
+                        rm -rf "$target/$old_skill"
+                        echo "    removed stale → $old_skill"
+                    fi
+                done < "$manifest"
+            fi
+
+            # Copy current custom skills
             for skill in "$CUSTOM_SKILLS_DIR"/*/; do
                 if [ -f "$skill/SKILL.md" ]; then
                     skill_name=$(basename "$skill")
@@ -115,6 +148,9 @@ detect_and_install() {
                     INSTALLED_CUSTOM=$((INSTALLED_CUSTOM + 1))
                 fi
             done
+
+            # Write manifest of what we just installed
+            printf '%s\n' "${CURRENT_CUSTOM_SKILLS[@]}" > "$manifest"
         fi
     done
 }
@@ -137,6 +173,22 @@ if [ $INSTALLED_CUSTOM -eq 0 ]; then
                 parent_dir=$(dirname "$dir")
                 if [ -d "$parent_dir" ]; then
                     print_step "Detected skill directory: $parent_dir"
+                    # Clean stale skills
+                    local manifest="$parent_dir/$MANIFEST_NAME"
+                    if [ -f "$manifest" ]; then
+                        while IFS= read -r old_skill; do
+                            [ -z "$old_skill" ] && continue
+                            local still_exists=false
+                            for current in "${CURRENT_CUSTOM_SKILLS[@]}"; do
+                                [ "$current" = "$old_skill" ] && still_exists=true && break
+                            done
+                            if [ "$still_exists" = false ] && [ -d "$parent_dir/$old_skill" ]; then
+                                rm -rf "$parent_dir/$old_skill"
+                                echo "    removed stale → $old_skill"
+                            fi
+                        done < "$manifest"
+                    fi
+                    # Copy current skills
                     for skill in "$CUSTOM_SKILLS_DIR"/*/; do
                         if [ -f "$skill/SKILL.md" ]; then
                             skill_name=$(basename "$skill")
@@ -145,7 +197,9 @@ if [ $INSTALLED_CUSTOM -eq 0 ]; then
                             INSTALLED_CUSTOM=$((INSTALLED_CUSTOM + 1))
                         fi
                     done
-                    break  # Only need one directory to determine the pattern
+                    # Write manifest
+                    printf '%s\n' "${CURRENT_CUSTOM_SKILLS[@]}" > "$manifest"
+                    break
                 fi
             fi
         done < ".ai-dev-kit/.installed-skills"
