@@ -8,6 +8,8 @@ set -euo pipefail
 # 2. Runs the AI Dev Kit interactive installer (MCP server, skills, hooks, etc.)
 # 3. Prompts user to select which custom skills to install
 # 4. Copies selected custom skills into the same target directories
+#
+# Compatible with bash 3.2+ (macOS default)
 # ============================================================================
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -26,11 +28,7 @@ TOOL_SKILL_DIRS=(
 # ── Custom skill registry ──────────────────────────────────────────────────
 # Skills listed here default to OFF and must be opted-in.
 # All other skills in custom-skills/ default to ON.
-DEFAULT_OFF_SKILLS=(
-    "databricks-practice-skill"
-    "databricks-free-tier-guardrails"
-    "data-api-poc-builder"
-)
+DEFAULT_OFF_SKILLS="databricks-practice-skill databricks-free-tier-guardrails data-api-poc-builder"
 
 # Colors
 GREEN='\033[0;32m'
@@ -61,10 +59,9 @@ print_error() {
     echo -e "${RED}✗${NC} $1"
 }
 
-# Check if a skill is in the default-off list
 is_default_off() {
     local skill_name="$1"
-    for off_skill in "${DEFAULT_OFF_SKILLS[@]}"; do
+    for off_skill in $DEFAULT_OFF_SKILLS; do
         if [ "$skill_name" = "$off_skill" ]; then
             return 0
         fi
@@ -84,11 +81,11 @@ else
     git -C "$SCRIPT_DIR" submodule update --remote --merge
 fi
 
-# Show version
 if [ -f "$SUBMODULE_DIR/VERSION" ]; then
     DEVKIT_VERSION=$(cat "$SUBMODULE_DIR/VERSION")
     print_step "AI Dev Kit version: ${GREEN}$DEVKIT_VERSION${NC}"
 else
+    DEVKIT_VERSION=""
     print_warn "Could not determine AI Dev Kit version"
 fi
 
@@ -100,8 +97,6 @@ print_header "Step 2/4 — Running AI Dev Kit installer"
 print_step "Launching interactive installer — answer the prompts below."
 echo ""
 
-# Run their installer from the submodule directory
-# Pass through any args the user provided (e.g., --force, --global)
 bash "$SUBMODULE_DIR/install.sh" "$@"
 
 INSTALL_EXIT=$?
@@ -118,34 +113,31 @@ print_header "Step 3/4 — Select custom skills"
 
 # Discover all available custom skills
 ALL_SKILLS=()
+SKILL_SELECTED=()
 for skill in "$CUSTOM_SKILLS_DIR"/*/; do
     if [ -f "$skill/SKILL.md" ]; then
-        ALL_SKILLS+=("$(basename "$skill")")
+        skill_name=$(basename "$skill")
+        ALL_SKILLS+=("$skill_name")
+        if is_default_off "$skill_name"; then
+            SKILL_SELECTED+=(0)
+        else
+            SKILL_SELECTED+=(1)
+        fi
     fi
 done
 
-if [ ${#ALL_SKILLS[@]} -eq 0 ]; then
+SKILL_COUNT=${#ALL_SKILLS[@]}
+
+if [ $SKILL_COUNT -eq 0 ]; then
     print_warn "No custom skills found in $CUSTOM_SKILLS_DIR"
     exit 0
 fi
 
-# Build selection state: 1=selected, 0=not selected
-declare -A SKILL_SELECTED
-for skill_name in "${ALL_SKILLS[@]}"; do
-    if is_default_off "$skill_name"; then
-        SKILL_SELECTED[$skill_name]=0
-    else
-        SKILL_SELECTED[$skill_name]=1
-    fi
-done
-
 # Extract short description from SKILL.md frontmatter
 get_skill_desc() {
     local skill_path="$CUSTOM_SKILLS_DIR/$1/SKILL.md"
-    # Get the description line, strip quotes and truncate
     local desc
     desc=$(sed -n 's/^description: *"\{0,1\}\(.*\)"\{0,1\}$/\1/p' "$skill_path" 2>/dev/null | head -1)
-    # Truncate to 60 chars
     if [ ${#desc} -gt 60 ]; then
         desc="${desc:0:57}..."
     fi
@@ -158,29 +150,30 @@ while true; do
     echo -e "  ${BOLD}Custom skills available:${NC}"
     echo ""
 
-    local_idx=1
-    for skill_name in "${ALL_SKILLS[@]}"; do
-        local state
-        if [ "${SKILL_SELECTED[$skill_name]}" -eq 1 ]; then
+    idx=0
+    while [ $idx -lt $SKILL_COUNT ]; do
+        skill_name="${ALL_SKILLS[$idx]}"
+        display_num=$((idx + 1))
+
+        if [ "${SKILL_SELECTED[$idx]}" -eq 1 ]; then
             state="${GREEN}[x]${NC}"
         else
             state="${DIM}[ ]${NC}"
         fi
 
-        local default_tag=""
+        default_tag=""
         if is_default_off "$skill_name"; then
             default_tag="${DIM} (opt-in)${NC}"
         fi
 
-        local desc
         desc=$(get_skill_desc "$skill_name")
 
-        echo -e "    ${BOLD}$local_idx${NC}) $state $skill_name${default_tag}"
+        echo -e "    ${BOLD}${display_num}${NC}) $state $skill_name${default_tag}"
         if [ -n "$desc" ]; then
-            echo -e "         ${DIM}$desc${NC}"
+            echo -e "         ${DIM}${desc}${NC}"
         fi
 
-        local_idx=$((local_idx + 1))
+        idx=$((idx + 1))
     done
 
     echo ""
@@ -188,43 +181,46 @@ while true; do
     echo ""
     read -r -p "  > " choice < /dev/tty
 
-    # Empty input = confirm selection
     if [ -z "$choice" ]; then
         break
     fi
 
     case "$choice" in
         a|A)
-            for skill_name in "${ALL_SKILLS[@]}"; do
-                SKILL_SELECTED[$skill_name]=1
+            idx=0
+            while [ $idx -lt $SKILL_COUNT ]; do
+                SKILL_SELECTED[$idx]=1
+                idx=$((idx + 1))
             done
             ;;
         n|N)
-            for skill_name in "${ALL_SKILLS[@]}"; do
-                SKILL_SELECTED[$skill_name]=0
+            idx=0
+            while [ $idx -lt $SKILL_COUNT ]; do
+                SKILL_SELECTED[$idx]=0
+                idx=$((idx + 1))
             done
             ;;
         d|D)
-            for skill_name in "${ALL_SKILLS[@]}"; do
-                if is_default_off "$skill_name"; then
-                    SKILL_SELECTED[$skill_name]=0
+            idx=0
+            while [ $idx -lt $SKILL_COUNT ]; do
+                if is_default_off "${ALL_SKILLS[$idx]}"; then
+                    SKILL_SELECTED[$idx]=0
                 else
-                    SKILL_SELECTED[$skill_name]=1
+                    SKILL_SELECTED[$idx]=1
                 fi
+                idx=$((idx + 1))
             done
             ;;
         *[0-9]*)
-            # Toggle the numbered skill
-            if [ "$choice" -ge 1 ] 2>/dev/null && [ "$choice" -le ${#ALL_SKILLS[@]} ] 2>/dev/null; then
-                local_idx=$((choice - 1))
-                toggle_name="${ALL_SKILLS[$local_idx]}"
-                if [ "${SKILL_SELECTED[$toggle_name]}" -eq 1 ]; then
-                    SKILL_SELECTED[$toggle_name]=0
+            if [ "$choice" -ge 1 ] 2>/dev/null && [ "$choice" -le $SKILL_COUNT ] 2>/dev/null; then
+                toggle_idx=$((choice - 1))
+                if [ "${SKILL_SELECTED[$toggle_idx]}" -eq 1 ]; then
+                    SKILL_SELECTED[$toggle_idx]=0
                 else
-                    SKILL_SELECTED[$toggle_name]=1
+                    SKILL_SELECTED[$toggle_idx]=1
                 fi
             else
-                print_warn "Invalid number. Enter 1-${#ALL_SKILLS[@]}"
+                print_warn "Invalid number. Enter 1-${SKILL_COUNT}"
             fi
             ;;
         *)
@@ -235,10 +231,15 @@ done
 
 # Build final list of selected skills
 SELECTED_SKILLS=()
-for skill_name in "${ALL_SKILLS[@]}"; do
-    if [ "${SKILL_SELECTED[$skill_name]}" -eq 1 ]; then
-        SELECTED_SKILLS+=("$skill_name")
+SKIPPED_SKILLS=()
+idx=0
+while [ $idx -lt $SKILL_COUNT ]; do
+    if [ "${SKILL_SELECTED[$idx]}" -eq 1 ]; then
+        SELECTED_SKILLS+=("${ALL_SKILLS[$idx]}")
+    else
+        SKIPPED_SKILLS+=("${ALL_SKILLS[$idx]}")
     fi
+    idx=$((idx + 1))
 done
 
 echo ""
@@ -257,105 +258,80 @@ echo ""
 
 print_header "Step 4/4 — Installing custom skills"
 
-# Manifest file tracks previously installed custom skills for cleanup
 MANIFEST_NAME=".custom-skills-manifest"
-
 INSTALLED_CUSTOM=0
 
-detect_and_install() {
-    local base_dir="$1"
-    local scope_label="$2"
-
-    for tool_dir in "${TOOL_SKILL_DIRS[@]}"; do
-        local target="$base_dir/$tool_dir"
-        if [ -d "$target" ]; then
-            print_step "Found $scope_label skills at: $target"
-
-            # Clean up stale custom skills from previous installs
-            local manifest="$target/$MANIFEST_NAME"
-            if [ -f "$manifest" ]; then
-                while IFS= read -r old_skill; do
-                    # Skip empty lines
-                    [ -z "$old_skill" ] && continue
-                    # Check if this old skill is in the selected list
-                    local still_selected=false
-                    for current in "${SELECTED_SKILLS[@]+"${SELECTED_SKILLS[@]}"}"; do
-                        if [ "$current" = "$old_skill" ]; then
-                            still_selected=true
-                            break
-                        fi
-                    done
-                    if [ "$still_selected" = false ] && [ -d "$target/$old_skill" ]; then
-                        rm -rf "$target/$old_skill"
-                        echo "    removed → $old_skill"
-                    fi
-                done < "$manifest"
-            fi
-
-            # Copy selected custom skills
-            for skill_name in "${SELECTED_SKILLS[@]+"${SELECTED_SKILLS[@]}"}"; do
-                local skill="$CUSTOM_SKILLS_DIR/$skill_name"
-                if [ -f "$skill/SKILL.md" ]; then
-                    cp -r "$skill" "$target/$skill_name"
-                    echo "    copied → $skill_name"
-                    INSTALLED_CUSTOM=$((INSTALLED_CUSTOM + 1))
-                fi
-            done
-
-            # Write manifest of what we just installed
-            if [ ${#SELECTED_SKILLS[@]} -gt 0 ]; then
-                printf '%s\n' "${SELECTED_SKILLS[@]}" > "$manifest"
-            else
-                # Empty manifest — all custom skills removed
-                > "$manifest"
-            fi
+# Check if a skill name is in the selected list
+is_selected() {
+    local name="$1"
+    for s in "${SELECTED_SKILLS[@]+"${SELECTED_SKILLS[@]}"}"; do
+        if [ "$s" = "$name" ]; then
+            return 0
         fi
     done
+    return 1
 }
 
-# Check project scope first (current directory)
-detect_and_install "$(pwd)" "project"
+install_to_target() {
+    local target="$1"
+    local scope_label="$2"
+
+    print_step "Found $scope_label skills at: $target"
+
+    # Clean up stale custom skills from previous installs
+    local manifest="$target/$MANIFEST_NAME"
+    if [ -f "$manifest" ]; then
+        while IFS= read -r old_skill; do
+            [ -z "$old_skill" ] && continue
+            if ! is_selected "$old_skill" && [ -d "$target/$old_skill" ]; then
+                rm -rf "$target/$old_skill"
+                echo "    removed → $old_skill"
+            fi
+        done < "$manifest"
+    fi
+
+    # Copy selected custom skills
+    for skill_name in "${SELECTED_SKILLS[@]+"${SELECTED_SKILLS[@]}"}"; do
+        if [ -f "$CUSTOM_SKILLS_DIR/$skill_name/SKILL.md" ]; then
+            cp -r "$CUSTOM_SKILLS_DIR/$skill_name" "$target/$skill_name"
+            echo "    copied → $skill_name"
+            INSTALLED_CUSTOM=$((INSTALLED_CUSTOM + 1))
+        fi
+    done
+
+    # Write manifest
+    if [ ${#SELECTED_SKILLS[@]} -gt 0 ]; then
+        printf '%s\n' "${SELECTED_SKILLS[@]}" > "$manifest"
+    else
+        > "$manifest"
+    fi
+}
+
+# Check project scope (current directory)
+for tool_dir in "${TOOL_SKILL_DIRS[@]}"; do
+    target="$(pwd)/$tool_dir"
+    if [ -d "$target" ]; then
+        install_to_target "$target" "project"
+    fi
+done
 
 # Check global scope
-detect_and_install "$HOME" "global"
+for tool_dir in "${TOOL_SKILL_DIRS[@]}"; do
+    target="$HOME/$tool_dir"
+    if [ -d "$target" ]; then
+        install_to_target "$target" "global"
+    fi
+done
 
-# If nothing was detected, try to infer from .ai-dev-kit state
+# Fallback: infer from .ai-dev-kit state
 if [ $INSTALLED_CUSTOM -eq 0 ] && [ ${#SELECTED_SKILLS[@]} -gt 0 ]; then
     print_warn "No existing skill directories found. Checking AI Dev Kit state..."
-
-    # Check project-level state
     if [ -f ".ai-dev-kit/.installed-skills" ]; then
         while IFS='|' read -r dir _; do
             if [ -n "$dir" ] && [ -d "$dir" ]; then
                 parent_dir=$(dirname "$dir")
                 if [ -d "$parent_dir" ]; then
-                    print_step "Detected skill directory: $parent_dir"
-                    # Clean stale skills
-                    manifest="$parent_dir/$MANIFEST_NAME"
-                    if [ -f "$manifest" ]; then
-                        while IFS= read -r old_skill; do
-                            [ -z "$old_skill" ] && continue
-                            local still_selected=false
-                            for current in "${SELECTED_SKILLS[@]}"; do
-                                [ "$current" = "$old_skill" ] && still_selected=true && break
-                            done
-                            if [ "$still_selected" = false ] && [ -d "$parent_dir/$old_skill" ]; then
-                                rm -rf "$parent_dir/$old_skill"
-                                echo "    removed → $old_skill"
-                            fi
-                        done < "$manifest"
-                    fi
-                    # Copy selected skills
-                    for skill_name in "${SELECTED_SKILLS[@]}"; do
-                        local skill="$CUSTOM_SKILLS_DIR/$skill_name"
-                        if [ -f "$skill/SKILL.md" ]; then
-                            cp -r "$skill" "$parent_dir/$skill_name"
-                            echo "    copied → $skill_name"
-                            INSTALLED_CUSTOM=$((INSTALLED_CUSTOM + 1))
-                        fi
-                    done
-                    # Write manifest
-                    printf '%s\n' "${SELECTED_SKILLS[@]}" > "$manifest"
+                    install_to_target "$parent_dir" "detected"
                     break
                 fi
             fi
@@ -365,7 +341,6 @@ fi
 
 if [ $INSTALLED_CUSTOM -eq 0 ] && [ ${#SELECTED_SKILLS[@]} -gt 0 ]; then
     print_warn "No skill installation targets found."
-    print_warn "Custom skills are available in: $CUSTOM_SKILLS_DIR"
     print_warn "You can manually copy them with:"
     echo ""
     echo "    cp -r $CUSTOM_SKILLS_DIR/<skill-name> .claude/skills/"
@@ -390,16 +365,10 @@ else
     done
 fi
 
-SKIPPED=()
-for skill_name in "${ALL_SKILLS[@]}"; do
-    if [ "${SKILL_SELECTED[$skill_name]}" -eq 0 ]; then
-        SKIPPED+=("$skill_name")
-    fi
-done
-if [ ${#SKIPPED[@]} -gt 0 ]; then
+if [ ${#SKIPPED_SKILLS[@]} -gt 0 ]; then
     echo ""
     echo "  Skipped (not selected):"
-    for s in "${SKIPPED[@]}"; do
+    for s in "${SKIPPED_SKILLS[@]}"; do
         echo "    • $s"
     done
 fi
