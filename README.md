@@ -19,8 +19,10 @@ rob_skills/
 │   ├── spark-job-optimization/
 │   ├── dbldatagen/
 │   ├── databricks-geospatial/
-│   └── databricks-free-tier-guardrails/
-├── update.sh                # One script: pull + install + custom skills
+│   ├── databricks-free-tier-guardrails/
+│   └── update-skills-from-lessons/
+├── update.sh                # One script: pull + install + custom skills + Genie Code deploy
+├── CLAUDE.md.example        # Template for project-level CLAUDE.md (copy and fill in paths)
 └── README.md
 ```
 
@@ -34,13 +36,27 @@ One command to install everything — AI Dev Kit (MCP server, skills, hooks, con
 
 This will:
 1. Pull the latest AI Dev Kit from upstream
-2. Run the AI Dev Kit interactive installer (you'll answer prompts for tool selection, Databricks profile, scope, skill profiles, etc.)
-3. Copy all custom skills into the same target directories
+2. Run the AI Dev Kit interactive installer (MCP server, skills, hooks, Databricks profile)
+3. Update the MCP server packages and patch configs with your Databricks profile
+4. Optionally install the Databricks Builder App for local development
+5. Prompt you to select which custom skills to install
+6. Copy selected custom skills into the target directories
+7. Optionally deploy all skills to Genie Code in your Databricks workspace
 
 To force a full reinstall:
 ```bash
 ./update.sh --force
 ```
+
+## CLAUDE.md Setup
+
+Copy the example and fill in your paths:
+
+```bash
+cp CLAUDE.md.example CLAUDE.md
+```
+
+`CLAUDE.md` is gitignored — it contains your local `lessons_path` for the `update-skills-from-lessons` skill. On session start, Claude will check for new lessons and suggest updates to custom skills.
 
 ## Custom Skills
 
@@ -118,6 +134,20 @@ Generate large-scale synthetic data using [Databricks Labs dbldatagen](https://g
 ### databricks-free-tier-guardrails
 
 Compatibility filter applied after other generation skills to ensure artifacts work on Databricks free tier (serverless compute only). Checks for banned APIs, library availability, and cluster configuration restrictions.
+
+### update-skills-from-lessons
+
+Scans a lessons-learned directory for practice session notes and suggests targeted updates to custom skills. The lessons path is provided by `CLAUDE.md` (not hardcoded in the skill). Only modifies custom skills — never touches AI Dev Kit skills or installed copies.
+
+## Genie Code Deployment
+
+Step 7 of `update.sh` optionally deploys skills to your Databricks workspace for use with Genie Code (Agent mode in notebooks). Skills are sourced from:
+
+1. **Databricks skills** — directly from the `ai-dev-kit` submodule (authoritative)
+2. **MLflow + APX skills** — from installed copies (fetched from external repos by the AI Dev Kit installer)
+3. **Custom skills** — from the `custom-skills/` directory
+
+Skills are uploaded to `/Workspace/Users/<you>/.assistant/skills/`.
 
 ## Usage
 
