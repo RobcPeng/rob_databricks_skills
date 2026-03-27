@@ -174,7 +174,7 @@ GeoParquet stores geometry columns as WKB in Parquet files with spatial metadata
 
 ```python
 # Read GeoParquet files -- geometry is stored as binary (WKB)
-df = spark.read.parquet("s3://overturemaps-us-west-2/release/2025-01-22.0/theme=places/type=place")
+df = spark.read.parquet("s3://overturemaps-us-west-2/release/2026-02-18.0/theme=places/type=place")
 
 # The geometry column is binary WKB -- convert to GEOGRAPHY
 df_geo = df.selectExpr(
@@ -189,7 +189,7 @@ df_geo = df.selectExpr(
 -- SQL: Read and convert geometry
 CREATE TABLE places
 USING PARQUET
-LOCATION 's3://overturemaps-us-west-2/release/2025-01-22.0/theme=places/type=place';
+LOCATION 's3://overturemaps-us-west-2/release/2026-02-18.0/theme=places/type=place';
 
 SELECT id,
        names.primary AS name,

@@ -92,7 +92,7 @@ Overture Maps data is on public S3 (us-west-2). Databricks clusters can read it 
 
 ```python
 # This runs on the cluster -- S3 access is automatic
-df = spark.read.parquet("s3a://overturemaps-us-west-2/release/2025-01-22.0/theme=places/type=place")
+df = spark.read.parquet("s3a://overturemaps-us-west-2/release/2026-02-18.0/theme=places/type=place")
 ```
 
 For SQL access, first register as an external table:
@@ -101,7 +101,7 @@ For SQL access, first register as an external table:
 Tool: execute_sql
 Query: CREATE TABLE IF NOT EXISTS overture_places
        USING PARQUET
-       LOCATION 's3a://overturemaps-us-west-2/release/2025-01-22.0/theme=places/type=place'
+       LOCATION 's3a://overturemaps-us-west-2/release/2026-02-18.0/theme=places/type=place'
 ```
 
 ### Saving Results

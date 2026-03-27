@@ -287,7 +287,7 @@ Esri Community Maps is one of the data sources contributing to Overture Maps (~1
 ```python
 # Check data provenance in Overture -- which features came from Esri?
 buildings = spark.read.parquet(
-    "s3a://overturemaps-us-west-2/release/2025-01-22.0/theme=buildings/type=building"
+    "s3a://overturemaps-us-west-2/release/2026-02-18.0/theme=buildings/type=building"
 )
 
 # Filter to Esri-sourced buildings

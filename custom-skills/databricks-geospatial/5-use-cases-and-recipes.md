@@ -24,7 +24,7 @@ Production-ready patterns for common geospatial analysis tasks on Databricks, wi
 ```python
 import pyspark.sql.functions as F
 
-OVERTURE_BASE = "s3a://overturemaps-us-west-2/release/2025-01-22.0"
+OVERTURE_BASE = "s3a://overturemaps-us-west-2/release/2026-02-18.0"
 
 places = spark.read.parquet(f"{OVERTURE_BASE}/theme=places/type=place")
 
@@ -399,6 +399,28 @@ FROM (
 WHERE event_count > 10
 ORDER BY event_count DESC;
 ```
+
+### Visualizing Geospatial Results
+
+> **⚠️ keplergl requires Databricks — do not install locally.** `pip install keplergl` fails on macOS because it pulls `geopandas` → `fiona` → GDAL C headers. On Databricks (DBR 14.0+), GDAL/GEOS/PROJ are pre-installed in the runtime:
+>
+> ```python
+> %pip install keplergl
+> from keplergl import KeplerGl
+> map_1 = KeplerGl(height=600, data={"h3_heatmap": df.limit(50000).toPandas()})
+> map_1
+> ```
+>
+> **Keep keplergl maps under ~50K points** — larger datasets crash the notebook widget renderer.
+>
+> **Serverless / free tier:** `%pip install keplergl` works on serverless compute, but the widget rendering depends on notebook frontend support. If it doesn't render, fall back to `matplotlib` + GeoJSON or `folium`, which are lighter and local-friendly:
+>
+> ```python
+> # folium — no native deps, works everywhere
+> %pip install folium
+> import folium
+> m = folium.Map(location=[39.7392, -104.9903], zoom_start=12)
+> ```
 
 ### Kernel Density Estimation (KDE Approximation)
 
