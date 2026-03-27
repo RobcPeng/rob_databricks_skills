@@ -64,8 +64,11 @@ SELECT ST_MAKEPOLYGON(
 SELECT ST_GEOGFROMTEXT('POINT(-122.4 37.8)');
 SELECT ST_GEOMFROMTEXT('POINT(-122.4 37.8)', 4326);
 
--- WKB
+-- WKB (GEOGRAPHY — spherical, returns GEOGRAPHY(4326))
 SELECT ST_GEOGFROMWKB(geometry_binary_col);
+
+-- WKB (GEOMETRY — planar, returns GEOMETRY)
+SELECT ST_GEOMFROMWKB(geometry_binary_col);
 
 -- GeoJSON
 SELECT ST_GEOGFROMGEOJSON('{"type":"Point","coordinates":[-122.4,37.8]}');
@@ -80,6 +83,8 @@ SELECT ST_GEOMFROMGEOHASH('9q8yyk9');
 SELECT TO_GEOGRAPHY('POINT(-122.4 37.8)');  -- WKT, WKB, or GeoJSON
 SELECT TRY_TO_GEOGRAPHY(maybe_invalid_col); -- returns NULL on error
 ```
+
+> **⚠️ GEOGRAPHY vs GEOMETRY type mismatch:** `ST_GEOGFROMWKB` returns `GEOGRAPHY(4326)` (spherical), while `ST_GEOMFROMWKB` returns `GEOMETRY` (planar). Functions like `ST_CENTROID`, `ST_AREA`, `ST_CONTAINS`, and `ST_INTERSECTION` expect `GEOMETRY` — passing a `GEOGRAPHY` will fail with `DATATYPE_MISMATCH.UNEXPECTED_INPUT_TYPE`. **When working with Overture Maps WKB columns, use `ST_GEOMFROMWKB`** unless you specifically need geography-type operations like spherical `ST_DISTANCE`.
 
 ---
 
@@ -219,11 +224,12 @@ SELECT ST_DWITHIN(
 
 ```sql
 -- Find all stores within each sales territory
+-- NOTE: Use ST_GEOMFROMWKB (not ST_GEOGFROMWKB) — ST_CONTAINS requires GEOMETRY type
 SELECT t.territory_name, s.store_name
 FROM territories t
 JOIN stores s
   ON ST_CONTAINS(
-    ST_GEOGFROMWKB(t.geometry),
+    ST_GEOMFROMWKB(t.geometry),
     ST_POINT(s.longitude, s.latitude)
   );
 ```
@@ -387,7 +393,7 @@ SELECT s.store_id, s.store_name, t.territory_name
 FROM stores s
 JOIN territories t
   ON ST_CONTAINS(
-    ST_GEOGFROMWKB(t.boundary),
+    ST_GEOMFROMWKB(t.boundary),
     ST_POINT(s.lon, s.lat)
   );
 ```
@@ -430,12 +436,12 @@ JOIN restaurants r
 -- Count buildings per neighborhood
 SELECT n.name AS neighborhood,
        COUNT(*) AS building_count,
-       SUM(ST_AREA(ST_GEOGFROMWKB(b.geometry))) AS total_area_sqm
+       SUM(ST_AREA(ST_GEOMFROMWKB(b.geometry))) AS total_area_sqm
 FROM neighborhoods n
 JOIN buildings b
   ON ST_CONTAINS(
-    ST_GEOGFROMWKB(n.boundary),
-    ST_CENTROID(ST_GEOGFROMWKB(b.geometry))
+    ST_GEOMFROMWKB(n.boundary),
+    ST_CENTROID(ST_GEOMFROMWKB(b.geometry))
   )
 GROUP BY n.name
 ORDER BY building_count DESC;

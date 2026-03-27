@@ -52,20 +52,25 @@ s3://overturemaps-us-west-2/release/{VERSION}/theme={THEME}/type={TYPE}/*
 
 **AWS S3 (us-west-2):**
 ```
-s3://overturemaps-us-west-2/release/2025-01-22.0/theme=places/type=place/*
-s3://overturemaps-us-west-2/release/2025-01-22.0/theme=buildings/type=building/*
-s3://overturemaps-us-west-2/release/2025-01-22.0/theme=transportation/type=segment/*
-s3://overturemaps-us-west-2/release/2025-01-22.0/theme=addresses/type=address/*
-s3://overturemaps-us-west-2/release/2025-01-22.0/theme=divisions/type=division/*
-s3://overturemaps-us-west-2/release/2025-01-22.0/theme=base/type=land/*
+s3://overturemaps-us-west-2/release/2026-02-18.0/theme=places/type=place/*
+s3://overturemaps-us-west-2/release/2026-02-18.0/theme=buildings/type=building/*
+s3://overturemaps-us-west-2/release/2026-02-18.0/theme=transportation/type=segment/*
+s3://overturemaps-us-west-2/release/2026-02-18.0/theme=addresses/type=address/*
+s3://overturemaps-us-west-2/release/2026-02-18.0/theme=divisions/type=division/*
+s3://overturemaps-us-west-2/release/2026-02-18.0/theme=base/type=land/*
 ```
 
 **Azure Blob Storage:**
 ```
-wasbs://release@overturemapswestus2.blob.core.windows.net/2025-01-22.0/theme=places/type=place/*
+wasbs://release@overturemapswestus2.blob.core.windows.net/2026-02-18.0/theme=places/type=place/*
 ```
 
-> **Note:** Replace `2025-01-22.0` with the latest release version. Check https://docs.overturemaps.org/ for the current release.
+> **⚠️ Overture Maps prunes old releases from S3.** If you get `PATH_NOT_FOUND`, the release version is stale. To find the current release:
+> 1. Check https://docs.overturemaps.org/blog/ for the latest release notes
+> 2. Or list releases directly in SQL: `LIST 's3a://overturemaps-us-west-2/release/' LIMIT 10;`
+> 3. Or check the STAC catalog at https://docs.overturemaps.org/getting-data/cloud-sources/
+>
+> The path structure (`theme=X/type=Y`) is stable — only the release date changes.
 
 ### Reading Directly from S3 in Databricks
 
@@ -75,7 +80,7 @@ Overture Maps S3 buckets are public -- no credentials or IAM config needed. Data
 Write the following to a local file (e.g., `scripts/load_overture.py`), then execute with the `run_python_file_on_databricks` MCP tool:
 
 ```python
-OVERTURE_RELEASE = "2025-01-22.0"
+OVERTURE_RELEASE = "2026-02-18.0"
 OVERTURE_BASE = f"s3a://overturemaps-us-west-2/release/{OVERTURE_RELEASE}"
 
 # Read a theme
@@ -93,7 +98,7 @@ Use the `execute_sql` MCP tool to register as an external table:
 -- Register as external table (run via execute_sql tool)
 CREATE TABLE IF NOT EXISTS overture_places
 USING PARQUET
-LOCATION 's3a://overturemaps-us-west-2/release/2025-01-22.0/theme=places/type=place';
+LOCATION 's3a://overturemaps-us-west-2/release/2026-02-18.0/theme=places/type=place';
 ```
 
 **Context reuse pattern:** After the first `run_python_file_on_databricks` call returns `cluster_id` and `context_id`, pass them to subsequent calls. This keeps the cluster warm and avoids re-reading Overture data from S3.
@@ -143,7 +148,7 @@ Overture data is global. You almost always want to extract a specific region. He
 The fastest approach. Uses Parquet predicate pushdown on the `bbox` struct column -- Spark skips entire row groups that fall outside the box.
 
 ```python
-OVERTURE_BASE = "s3a://overturemaps-us-west-2/release/2025-01-22.0"
+OVERTURE_BASE = "s3a://overturemaps-us-west-2/release/2026-02-18.0"
 
 # Common bounding boxes (approx)
 BBOXES = {
@@ -269,7 +274,7 @@ Use Overture's own Divisions theme to get the exact boundary polygon, then join 
 ```python
 import pyspark.sql.functions as F
 
-OVERTURE_BASE = "s3a://overturemaps-us-west-2/release/2025-01-22.0"
+OVERTURE_BASE = "s3a://overturemaps-us-west-2/release/2026-02-18.0"
 
 # Step 1: Get the boundary polygon for your target area
 division_areas = spark.read.parquet(f"{OVERTURE_BASE}/theme=divisions/type=division_area")
@@ -519,7 +524,7 @@ WHERE bbox.xmin > -122.43 AND bbox.xmax < -122.39
 ```python
 import pyspark.sql.functions as F
 
-OVERTURE_BASE = "s3a://overturemaps-us-west-2/release/2025-01-22.0"
+OVERTURE_BASE = "s3a://overturemaps-us-west-2/release/2026-02-18.0"
 CATALOG = "my_catalog"
 SCHEMA = "overture_sf"
 
@@ -553,7 +558,7 @@ for table_name, (theme, ftype) in themes.items():
     df = (
         spark.read.parquet(f"{OVERTURE_BASE}/theme={theme}/type={ftype}")
         .filter(bbox_filter(BBOX))
-        .withColumn("_overture_release", F.lit("2025-01-22.0"))
+        .withColumn("_overture_release", F.lit("2026-02-18.0"))
         .withColumn("_ingest_timestamp", F.current_timestamp())
     )
     df.write.mode("overwrite").saveAsTable(f"{CATALOG}.{SCHEMA}.{table_name}")
@@ -587,7 +592,7 @@ print("Done! All themes loaded.")
 
 ```python
 # All restaurants in San Francisco
-OVERTURE_BASE = "s3a://overturemaps-us-west-2/release/2025-01-22.0"
+OVERTURE_BASE = "s3a://overturemaps-us-west-2/release/2026-02-18.0"
 
 places = spark.read.parquet(f"{OVERTURE_BASE}/theme=places/type=place")
 
@@ -950,7 +955,7 @@ ORDER BY total_sqkm DESC;
 ### Full Theme Load
 
 ```python
-OVERTURE_RELEASE = "2025-01-22.0"
+OVERTURE_RELEASE = "2026-02-18.0"
 OVERTURE_BASE = f"s3a://overturemaps-us-west-2/release/{OVERTURE_RELEASE}"
 CATALOG = "my_catalog"
 SCHEMA = "overture"
