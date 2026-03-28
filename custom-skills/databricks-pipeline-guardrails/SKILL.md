@@ -1,11 +1,6 @@
 ---
 name: databricks-pipeline-guardrails
-description: >
-  Quality guardrails for Databricks pipeline code — fully qualified table names, table existence
-  verification, broadcast hints for non-equi joins, schema contracts for multi-layer pipelines,
-  and union alignment patterns. Use when generating pipeline notebooks, SDP definitions, or
-  multi-table ETL code. Triggers on: 'pipeline', 'bronze/silver/gold', 'medallion', 'ETL',
-  'streaming table', 'materialized view', 'SDP', or when dispatching subagents to build pipeline layers.
+description: "Use when generating pipeline code — enforces qualified table names, existence checks, broadcast hints, schema contracts, and union alignment for medallion/SDP/ETL notebooks."
 ---
 
 # Databricks Pipeline Guardrails

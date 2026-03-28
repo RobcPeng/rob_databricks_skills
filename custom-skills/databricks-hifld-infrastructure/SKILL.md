@@ -1,15 +1,6 @@
 ---
 name: databricks-hifld-infrastructure
-description: >
-  Use when working with HIFLD (Homeland Infrastructure Foundation-Level Data) on Databricks —
-  public infrastructure datasets from DHS/CISA covering energy, health, education, emergency
-  services, transportation, communications, water, and government facilities. Triggers on:
-  'HIFLD', 'infrastructure data', 'substations', 'transmission lines', 'power plants',
-  'hospitals', 'fire stations', 'EMS', 'schools', 'cell towers', 'dams', 'airports',
-  'bridges', 'nursing homes', 'law enforcement', 'emergency services', 'critical infrastructure',
-  'public safety', 'SLED data', 'government facilities', 'service territories', 'grid data',
-  'energy infrastructure', 'ArcGIS Feature Service', 'HIFLD open data', 'GeoJSON infrastructure',
-  'infrastructure analysis', 'coverage gaps', 'proximity analysis', 'vulnerability assessment'.
+description: "Use when loading or analyzing HIFLD infrastructure data on Databricks — substations, power plants, hospitals, schools, fire stations, dams, cell towers, bridges, and other DHS/CISA public datasets."
 ---
 
 # HIFLD Infrastructure Data on Databricks

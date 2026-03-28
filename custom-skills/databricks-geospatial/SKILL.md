@@ -1,16 +1,6 @@
 ---
 name: databricks-geospatial
-description: >
-  Comprehensive guide to geographic data analysis, spatial SQL, H3 indexing, and Overture Maps
-  on Databricks. Use when working with geospatial data, spatial joins, coordinate systems,
-  GeoParquet, point-in-polygon, distance calculations, geocoding, map visualizations, or
-  Overture Maps datasets (buildings, places, transportation, addresses, divisions, base).
-  Triggers on: 'geospatial', 'spatial SQL', 'ST_', 'H3', 'geography', 'geometry', 'GeoParquet',
-  'latitude', 'longitude', 'lat/lon', 'coordinates', 'spatial join', 'point in polygon',
-  'distance calculation', 'geocoding', 'reverse geocoding', 'Overture Maps', 'overturemaps',
-  'buildings data', 'places data', 'transportation network', 'ArcGIS', 'Esri', 'GeoJSON',
-  'WKT', 'WKB', 'bounding box', 'map visualization', 'choropleth', 'heatmap',
-  'geospatial analysis', 'spatial index', 'hexagonal grid', 'H3 resolution'.
+description: "Use when working with geospatial data on Databricks — spatial SQL (ST_ functions), H3 hexagonal indexing, Overture Maps datasets, spatial joins, distance calculations, or map visualizations."
 ---
 
 # Geographic Data Analysis on Databricks

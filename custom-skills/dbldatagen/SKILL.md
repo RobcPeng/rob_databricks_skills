@@ -1,12 +1,6 @@
 ---
 name: dbldatagen
-description: >
-  Generate large-scale synthetic data using Databricks Labs dbldatagen (Spark-native, declarative)
-  or Spark + Faker + Pandas UDFs. Use when creating test data, demo datasets, or synthetic tables
-  at scale. Covers both dbldatagen and Faker approaches with guidance on when to use each.
-  Triggers on: 'dbldatagen', 'synthetic data', 'generate data', 'test data', 'fake data',
-  'data generator', 'DataGenerator', 'withColumn spec', 'mock data', 'sample dataset',
-  'Faker', 'fake names', 'fake addresses', 'realistic data', 'Pandas UDF'.
+description: "Use when generating synthetic data at scale with dbldatagen or Spark + Faker. Covers test data, demo datasets, mock data, DataGenerator specs, and Pandas UDF patterns."
 ---
 
 # Synthetic Data Generation with dbldatagen

@@ -1,16 +1,6 @@
 ---
 name: databricks-governance
-description: >
-  Comprehensive guide to Databricks data governance with Unity Catalog — access control (RBAC/ABAC),
-  tagging, classification, column masking, row filters, audit logging, lineage, and compliance.
-  Use when working with permissions, privileges, grants, data protection, PII handling, dynamic
-  masking, row-level security, governed tags, audit logs, data quality, or compliance frameworks.
-  Triggers on: 'governance', 'access control', 'RBAC', 'ABAC', 'permissions', 'privileges',
-  'GRANT', 'REVOKE', 'tagging', 'classification', 'column mask', 'row filter', 'masking',
-  'PII', 'data protection', 'audit log', 'lineage', 'compliance', 'GDPR', 'CCPA', 'HIPAA',
-  'row-level security', 'column-level security', 'fine-grained access', 'data quality',
-  'ownership', 'service principal', 'governed tags', 'system tables', 'Delta Sharing audit',
-  'is_account_group_member', 'current_user', 'dynamic view', 'security', 'data classification'.
+description: "Use when working with Unity Catalog governance — RBAC privileges, ABAC tag policies, column masking, row filters, PII protection, audit logs, lineage, or compliance (GDPR/HIPAA/SOX/CCPA)."
 ---
 
 # Databricks Governance with Unity Catalog

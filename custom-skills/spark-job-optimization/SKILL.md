@@ -1,15 +1,6 @@
 ---
 name: spark-job-optimization
-description: >
-  Comprehensive Spark job optimization skill covering internals, query plan interpretation,
-  Spark UI analysis, Databricks diagnostics, and hands-on troubleshooting. Use when optimizing
-  Spark performance, diagnosing slow jobs, reading query plans, interpreting Spark UI, debugging
-  OOM/skew/shuffle issues, or teaching Spark optimization concepts. Triggers on: 'optimize Spark',
-  'slow Spark job', 'query plan', 'explain()', 'Spark UI', 'shuffle spill', 'data skew',
-  'OOM executor', 'partition strategy', 'broadcast join', 'sort merge join', 'AQE',
-  'Adaptive Query Execution', 'Catalyst optimizer', 'Tungsten', 'predicate pushdown',
-  'small files', 'executor memory', 'GC overhead', 'stage failure', 'Spark performance',
-  'Photon engine', 'Ganglia metrics', 'spark.sql.shuffle.partitions'.
+description: "Use when optimizing Spark performance, diagnosing slow jobs, reading query plans, interpreting Spark UI, or debugging OOM/skew/shuffle issues on Databricks."
 ---
 
 # Spark Job Optimization

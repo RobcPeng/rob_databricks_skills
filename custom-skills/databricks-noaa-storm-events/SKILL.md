@@ -1,11 +1,6 @@
 ---
 name: databricks-noaa-storm-events
-description: >
-  Use when working with NOAA Storm Events data on Databricks — loading severe weather CSVs,
-  parsing event types (tornado, hail, flood, wind), geocoding with lat/lon, damage estimation,
-  and spatial analysis. Triggers on: 'NOAA', 'storm events', 'severe weather', 'tornado data',
-  'hail data', 'flood data', 'weather history', 'storm damage', or when building weather
-  analytics on Databricks.
+description: "Use when working with NOAA Storm Events data on Databricks — loading severe weather CSVs, parsing event types, damage estimation, geocoding, and spatial analysis of storms."
 ---
 
 # NOAA Storm Events on Databricks

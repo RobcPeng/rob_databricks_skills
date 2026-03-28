@@ -1,11 +1,6 @@
 ---
 name: databricks-screenshot-docs
-description: >
-  Use when capturing screenshots of Databricks applications for documentation, blog posts,
-  demos, or presentations. Covers viewport sizing, map readability, dashboard layout,
-  waiting for async content, zoom levels, annotation, and output format. Triggers on:
-  'screenshot', 'take a picture', 'capture the page', 'blog post images', 'documentation
-  screenshots', 'demo screenshots', or when preparing visual assets from Databricks apps.
+description: "Use when capturing screenshots of Databricks apps for documentation, blogs, demos, or presentations. Covers viewport sizing, map readability, async wait, and annotation."
 ---
 
 # Databricks Screenshot Documentation

@@ -1,11 +1,6 @@
 ---
 name: databricks-free-tier-guardrails
-description: >
-  Use when generating any Databricks artifact (notebooks, scripts, pipelines, jobs) to verify
-  it is compatible with Databricks free tier and serverless compute. Triggers on "free tier",
-  "community edition", "serverless", "no cluster", "free Databricks", "trial account",
-  "starter warehouse", or any code generation task where cluster type is unspecified.
-  Apply AFTER other generation skills as a compatibility filter.
+description: "Use when generating Databricks artifacts to verify free tier and serverless compatibility. Apply as a filter after other skills. Checks for banned APIs, cluster config, and Spark Connect restrictions."
 ---
 
 # Databricks Free Tier Guardrails
