@@ -43,6 +43,7 @@ rob_skills/
 | `databricks-governance` | ON | Unity Catalog governance: RBAC, ABAC, tagging, masking, audit, compliance |
 | `databricks-pipeline-guardrails` | ON | Qualified names, table existence checks, schema contracts, broadcast hints, union alignment |
 | `databricks-screenshot-docs` | ON | Playwright screenshots for docs, blogs, presentations — viewports, maps, readability |
+| `databricks-noaa-storm-events` | ON | NOAA Storm Events: severe weather CSVs, damage parsing, spatial analysis |
 | `update-skills-from-lessons` | OFF | Scan practice lessons and suggest updates to custom skills |
 
 ## Working With This Repo

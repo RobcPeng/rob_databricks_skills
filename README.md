@@ -21,6 +21,7 @@ rob_skills/
 │   ├── databricks-geospatial/
 │   ├── databricks-free-tier-guardrails/
 │   ├── databricks-governance/
+│   ├── databricks-noaa-storm-events/
 │   ├── databricks-pipeline-guardrails/
 │   ├── databricks-screenshot-docs/
 │   └── update-skills-from-lessons/
@@ -151,6 +152,18 @@ Comprehensive Unity Catalog governance skill covering access control (RBAC/ABAC)
 | ABAC Policies | `5-abac-policies.md` |
 | Audit, Lineage & Compliance | `6-audit-lineage-compliance.md` |
 
+### databricks-noaa-storm-events
+
+Load, transform, and analyze NOAA Storm Events data — the authoritative US record of severe weather including tornadoes, hail, floods, thunderstorm wind, and more.
+
+| Feature | Details |
+|---------|---------|
+| **Source** | NOAA NCEI bulk CSV downloads (1950–present, public domain) |
+| **Schema reference** | 50-column details file with event type, lat/lon, damage, injuries, narratives |
+| **Transformations** | Timestamp parsing, K/M/B damage value parsing, coordinate cleaning |
+| **Spatial recipes** | Point-radius queries, H3 heatmaps, tornado path lines, Overture Maps boundary joins |
+| **Analysis patterns** | Yearly trends, top damage events, EF-scale distributions, seasonal patterns, AI narrative classification |
+
 ### databricks-pipeline-guardrails
 
 Quality guardrails for Databricks pipeline code — prevents common failures when building multi-layer ETL.
@@ -230,6 +243,10 @@ done
 ```
 
 ## Changelog
+
+### 2026-03-28
+
+- **New skill: `databricks-noaa-storm-events`** — NOAA Storm Events bulk CSV loading, damage value parsing (K/M/B suffixes), timestamp handling, spatial analysis recipes (H3 heatmaps, tornado paths, Overture boundary joins), AI Functions on event narratives.
 
 ### 2026-03-27
 
