@@ -1,6 +1,6 @@
 ---
 name: update-skills-from-lessons
-description: "Review lessons learned from practice sessions and suggest updates to custom skills only. Use on session start or when the user says 'check lessons', 'update skills from lessons', 'any new lessons', or 'skill updates'. Requires a lessons_path provided by the caller (CLAUDE.md)."
+description: "Use on session start or when the user says 'check lessons' or 'update skills'. Scans practice session lessons and suggests targeted updates to custom skills only."
 ---
 
 # Update Skills from Lessons Learned

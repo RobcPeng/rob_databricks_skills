@@ -184,3 +184,10 @@ Before deploying any pipeline code, verify:
 - [ ] SDP `%pip install` cells are the first cell in each notebook
 - [ ] No DDL (`CREATE SCHEMA`, `CREATE VOLUME`) inside SDP pipeline notebooks
 - [ ] Import uses `from pyspark import pipelines as dp` (not `import dlt`)
+
+## Related Skills
+
+- **[databricks-spark-declarative-pipelines](../databricks-spark-declarative-pipelines/SKILL.md)** — SDP pipeline creation and configuration
+- **[databricks-geospatial](../databricks-geospatial/SKILL.md)** — spatial joins requiring broadcast hints
+- **[databricks-free-tier-guardrails](../databricks-free-tier-guardrails/SKILL.md)** — serverless compatibility filter for pipelines
+- **[spark-job-optimization](../spark-job-optimization/SKILL.md)** — join strategy and shuffle optimization

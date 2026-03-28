@@ -21,6 +21,7 @@ rob_skills/
 │   ├── databricks-geospatial/
 │   ├── databricks-free-tier-guardrails/
 │   ├── databricks-governance/
+│   ├── databricks-hifld-infrastructure/
 │   ├── databricks-noaa-storm-events/
 │   ├── databricks-pipeline-guardrails/
 │   ├── databricks-screenshot-docs/
@@ -191,9 +192,55 @@ Playwright-based screenshot capture for documentation, blog posts, demos, and pr
 | Notebooks | Code + output cells, visualization cells, toolbar hiding |
 | Readability | Zoom levels by display context, data table row limits |
 
+### databricks-hifld-infrastructure
+
+Load and analyze HIFLD (Homeland Infrastructure Foundation-Level Data) — 300+ public datasets from DHS/CISA covering critical infrastructure across the US.
+
+| Topic | File |
+|-------|------|
+| Data Access Patterns | `1-data-access-patterns.md` |
+| Energy Infrastructure | `2-energy-infrastructure.md` |
+| Emergency Services | `3-emergency-services.md` |
+| Health & Education | `4-health-education.md` |
+| Transportation & Communications | `5-transportation-communications.md` |
+| Water & Government | `6-water-government.md` |
+| Cross-Sector Analysis Recipes | `7-analysis-recipes.md` |
+
+Covers: substations, transmission lines, power plants, fire stations, EMS, law enforcement, hospitals, schools, colleges, airports, bridges, cell towers, dams, water treatment, and more. Includes ArcGIS REST API pagination, GeoJSON/CSV loading, regional filters (Colorado/Rocky Mountain), and H3 density scoring.
+
 ### update-skills-from-lessons
 
 Scans a lessons-learned directory for practice session notes and suggests targeted updates to custom skills. The lessons path is provided by `CLAUDE.md` (not hardcoded in the skill). Only modifies custom skills — never touches AI Dev Kit skills or installed copies.
+
+## Skill Quality Standards
+
+Custom skills follow the [Claude Code skill best practices](https://code.claude.com/docs/en/skills) and [Agent Skills specification](https://agentskills.io/specification). Review skills periodically against these guidelines:
+
+### Frontmatter Rules
+
+| Field | Requirement |
+|-------|-------------|
+| `name` | Lowercase, hyphens only, ≤64 chars |
+| `description` | **≤250 chars** (truncated in skill listings). Start with "Use when..." — describe WHEN to trigger, not WHAT it does |
+| `disable-model-invocation` | Set `true` for skills requiring explicit `/invoke` (e.g., `data-api-poc-builder`) |
+
+### Structure Rules
+
+| Rule | Why |
+|------|-----|
+| SKILL.md **under 500 lines** | Full content loads into context on trigger — oversized skills waste tokens |
+| Move excess to supporting files | Claude loads only what's needed via progressive disclosure |
+| Reference supporting files from SKILL.md | Claude doesn't `ls` directories — unreferenced files are invisible |
+| Add cross-references to related skills | Helps Claude chain skills and discover relevant context |
+
+### Review Checklist
+
+- [ ] All descriptions ≤250 chars and start with "Use when..."
+- [ ] All SKILL.md files ≤500 lines
+- [ ] Oversized content split into numbered supporting files with routing table
+- [ ] Supporting files referenced from SKILL.md with guidance on when to load
+- [ ] Cross-references to related skills in a "Related Skills" section
+- [ ] Manual-only skills use `disable-model-invocation: true` (not description-level guardrails)
 
 ## Genie Code Deployment
 
@@ -246,6 +293,14 @@ done
 
 ### 2026-03-28
 
+- **New skill: `databricks-hifld-infrastructure`** — HIFLD critical infrastructure data (energy, emergency, health, education, transportation, communications, water, government). ArcGIS REST API loading, multi-dataset loader, Colorado/Rocky Mountain focus, cross-sector analysis recipes.
+- **Skill quality review** — Audited all 12 custom skills against Claude Code best practices:
+  - Tightened all descriptions to ≤250 chars (was 400-600) with "Use when..." format
+  - Split 4 oversized SKILL.md files into multi-file structure (NOAA 792→49, free-tier 627→98, screenshot 547→71, POC builder 640→94)
+  - Added `disable-model-invocation: true` to `data-api-poc-builder` (replaced description-level guardrails)
+  - Added supporting file references to `databricks-practice-skill`
+  - Added cross-references to `databricks-pipeline-guardrails` and `databricks-screenshot-docs`
+  - Added "Skill Quality Standards" section to README
 - **New skill: `databricks-noaa-storm-events`** — NOAA Storm Events bulk CSV loading, damage value parsing (K/M/B suffixes), timestamp handling, spatial analysis recipes (H3 heatmaps, tornado paths, Overture boundary joins), AI Functions on event narratives.
 
 ### 2026-03-27

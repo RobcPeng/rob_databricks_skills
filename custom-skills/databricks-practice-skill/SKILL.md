@@ -195,3 +195,15 @@ If the user just says "let's practice" without specifics, offer these options:
 3. **"Mock exam"** — 10 mixed certification-style questions
 4. **"Review my code"** — Paste code for a thorough review
 5. **"What should I work on?"** — Assess gaps and recommend a focus area
+
+## Supporting Files
+
+- **[references/exercise-bank.md](references/exercise-bank.md)** — Pre-built exercises organized by topic and difficulty. Load when generating challenges.
+- **[references/review-framework.md](references/review-framework.md)** — Code review rubric and scoring criteria. Load when reviewing user code.
+- **[scripts/install-practice-skill.sh](scripts/install-practice-skill.sh)** — Installation helper script.
+
+## Related Skills
+
+- **[spark-job-optimization](../spark-job-optimization/SKILL.md)** — deep-dive optimization content for advanced exercises
+- **[databricks-geospatial](../databricks-geospatial/SKILL.md)** — geospatial exercises and spatial SQL patterns
+- **[dbldatagen](../dbldatagen/SKILL.md)** — synthetic data generation for test datasets
