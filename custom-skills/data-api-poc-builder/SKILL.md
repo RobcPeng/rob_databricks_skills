@@ -1,6 +1,7 @@
 ---
 name: data-api-poc-builder
-description: "ONLY invoke when the user EXPLICITLY asks for 'data-api-poc-builder', 'data-api-collector POC', or '/data-api-poc-builder'. This skill requires external services (Kafka, PostgreSQL, Neo4j via data-api-collector-python) and must NOT be triggered by general mentions of POCs, pipelines, dashboards, streaming, or SLED use cases. Do NOT auto-trigger on ambient keywords."
+description: "Build POC Databricks artifacts on top of external Kafka, PostgreSQL, and Neo4j data sources via data-api-collector-python."
+disable-model-invocation: true
 ---
 
 # Data API POC Builder

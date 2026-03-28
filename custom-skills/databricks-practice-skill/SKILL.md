@@ -1,6 +1,6 @@
 ---
 name: databricks-practice
-description: "Interactive Spark and Databricks practice coach that generates exercises, coding challenges, and hands-on drills. Triggers when the user wants to practice, learn, drill, study, or prepare for Databricks or Spark. Also triggers for: 'quiz me', 'give me a challenge', 'test my knowledge', 'practice PySpark', 'Databricks exercises', 'Spark coding problems', 'prep for certification', 'review my Spark code', 'help me get better at Delta Lake', 'I want to practice window functions', or any request to improve Spark/Databricks skills through active exercises. Even if the user just says 'let's practice' or 'drill me' in a Databricks project context, use this skill."
+description: "Use when the user wants to practice, drill, or study Spark and Databricks — generates exercises, coding challenges, quizzes, and provides coaching feedback against a live workspace."
 ---
 
 # Databricks Practice Coach
