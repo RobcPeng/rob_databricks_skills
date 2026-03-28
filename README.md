@@ -214,15 +214,59 @@ Scans a lessons-learned directory for practice session notes and suggests target
 
 ## Skill Quality Standards
 
-Custom skills follow the [Claude Code skill best practices](https://code.claude.com/docs/en/skills) and [Agent Skills specification](https://agentskills.io/specification). Review skills periodically against these guidelines:
+Custom skills follow the [Claude Code skill best practices](https://code.claude.com/docs/en/skills) and [Agent Skills specification](https://agentskills.io/specification). Review skills periodically against these guidelines.
 
-### Frontmatter Rules
+### Why Frontmatter Matters
 
-| Field | Requirement |
-|-------|-------------|
-| `name` | Lowercase, hyphens only, ≤64 chars |
-| `description` | **≤250 chars** (truncated in skill listings). Start with "Use when..." — describe WHEN to trigger, not WHAT it does |
-| `disable-model-invocation` | Set `true` for skills requiring explicit `/invoke` (e.g., `data-api-poc-builder`) |
+Frontmatter is how Claude Code discovers and decides whether to load your skill. The system works in three stages:
+
+1. **Always in context:** Skill `name` + `description` are loaded into every conversation so Claude knows what's available. This is ~100 words per skill. Descriptions over 250 chars are **truncated** in this listing — anything past 250 chars is invisible to Claude's matching logic.
+
+2. **Loaded on trigger:** When Claude decides a skill is relevant (or the user types `/skill-name`), the full `SKILL.md` body loads into context. This is why SKILL.md should stay under 500 lines — it ALL loads at once.
+
+3. **Loaded on demand:** Supporting files (numbered `.md` files) are only loaded when Claude follows a link from SKILL.md. This is progressive disclosure — Claude reads the routing table, then fetches only the relevant reference.
+
+**The critical implication:** If your description doesn't convince Claude to load the skill in stage 1, nothing else matters. And if your SKILL.md is 800 lines, you burn 12K+ tokens of context every time the skill triggers — even for a one-line question.
+
+### Frontmatter Reference
+
+```yaml
+---
+name: my-skill-name                    # Required. Lowercase, hyphens only, ≤64 chars
+description: "Use when [trigger]..."   # Recommended. ≤250 chars. WHEN to use, not WHAT it does
+disable-model-invocation: true         # Optional. Prevents Claude from auto-loading
+user-invocable: false                  # Optional. Hides from /slash-command menu
+allowed-tools: Read, Grep, Glob       # Optional. Tools allowed without user approval
+model: sonnet                          # Optional. Model override for this skill
+context: fork                          # Optional. Run in isolated subagent
+agent: Explore                         # Optional. Subagent type (with context: fork)
+---
+```
+
+**Description guidelines:**
+- Start with "Use when..." — describes the TRIGGER, not the workflow
+- Keep under 250 chars (truncated in skill listings)
+- Include key domain terms Claude would match against ("RBAC", "spatial SQL", "HIFLD")
+- Do NOT summarize what the skill does — Claude may follow the description instead of reading the full skill
+- Write in third person (injected into system prompt context)
+
+**Common mistakes:**
+```yaml
+# BAD: Describes what the skill does, not when to use it
+description: "Comprehensive guide to data governance covering RBAC, ABAC, tagging..."
+
+# BAD: Too long — everything after 250 chars is invisible
+description: "Use when working with governance... Triggers on: 'RBAC', 'ABAC', 'tagging', 'masking'..."
+
+# BAD: Tries to prevent auto-trigger via description text
+description: "ONLY invoke when user EXPLICITLY asks for this skill. Do NOT auto-trigger..."
+
+# GOOD: Concise, starts with trigger, key terms in first 250 chars
+description: "Use when working with Unity Catalog governance — RBAC, ABAC, column masking, row filters, audit logs, or compliance."
+
+# GOOD: Use frontmatter field instead of description guardrails
+disable-model-invocation: true
+```
 
 ### Structure Rules
 
@@ -232,6 +276,7 @@ Custom skills follow the [Claude Code skill best practices](https://code.claude.
 | Move excess to supporting files | Claude loads only what's needed via progressive disclosure |
 | Reference supporting files from SKILL.md | Claude doesn't `ls` directories — unreferenced files are invisible |
 | Add cross-references to related skills | Helps Claude chain skills and discover relevant context |
+| Only SKILL.md gets frontmatter | Supporting files are plain markdown — Claude ignores frontmatter in non-SKILL.md files |
 
 ### Review Checklist
 
