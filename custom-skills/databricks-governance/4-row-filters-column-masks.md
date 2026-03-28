@@ -329,6 +329,7 @@ FROM sales.gold.customers;
 
 ## 6. Limitations
 
+- **SDP pipeline tables:** Cannot apply row filters or column masks to SDP streaming tables or materialized views — they are internally views, not regular Delta tables. Only tables created via `CREATE TABLE` or `df.write.saveAsTable()` support masks/filters. Plan governance demos to apply masks on gold tables created by notebook code, not pipeline-managed tables.
 - **Views:** Cannot apply row filters or column masks to views (use dynamic views instead)
 - **Iceberg REST / Unity REST APIs:** Incompatible
 - **Delta Sharing:** Providers cannot share tables with active filters/masks

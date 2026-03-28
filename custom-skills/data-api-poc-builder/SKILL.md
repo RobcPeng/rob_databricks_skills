@@ -141,6 +141,13 @@ parsed = raw.select(
 ).select("data.*")
 ```
 
+> **⚠️ Stale Kafka messages after generator restart.** Stopping a data-api-collector generator and starting a new one does **not** clear the topic. Old messages from previous runs persist, so `startingOffsets="earliest"` will consume stale data first — which is deceptive when old and new specs share column names but differ in generation logic. To avoid confusion:
+> 1. Use a **new topic name** for each test iteration
+> 2. Consume only **recent offsets** (not `"earliest"`) during debugging
+> 3. **Delete and recreate the topic** between test runs
+
+> **⚠️ Batch Kafka reads:** If you inspect a topic with `spark.read.format("kafka")` (batch mode), `startingOffsets="latest"` is invalid — it only works with `readStream`. For batch reads, use `startingOffsets="earliest"` with `endingOffsets="latest"` to read the full topic contents.
+
 ### PostgreSQL JDBC
 
 ```python

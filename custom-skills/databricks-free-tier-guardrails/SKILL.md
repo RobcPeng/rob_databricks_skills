@@ -351,6 +351,28 @@ warehouse: My Warehouse
 
 ---
 
+## AI Functions — Free Tier Support
+
+AI Functions that call foundation models via pay-per-token are confirmed working on the Serverless Starter Warehouse (verified 2026-03-27):
+
+```sql
+-- ai_classify — works on free tier
+SELECT ai_classify("This product is amazing!", ARRAY("positive", "negative", "neutral")) AS sentiment;
+
+-- ai_forecast — works on free tier
+-- horizon is an INTEGER (number of periods), NOT a date
+SELECT * FROM ai_forecast(
+  TABLE(my_catalog.my_schema.time_series_table),
+  horizon => 10,
+  time_col => 'ds',
+  value_col => 'y'
+);
+```
+
+> **Note:** `ai_forecast` requires the time column to be `TIMESTAMP` type and `horizon` must be an integer (number of future periods to predict), not a timestamp.
+
+---
+
 ## Unity Catalog — Free Tier Constraints
 
 ```python

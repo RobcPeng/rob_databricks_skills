@@ -222,16 +222,28 @@ SELECT ST_DWITHIN(
 
 ### Spatial Join Pattern
 
+> **⚠️ Always `F.broadcast()` the small side of spatial joins.** `ST_CONTAINS`, `ST_INTERSECTS`, and `ST_DWITHIN` are non-equi joins — Spark uses nested loop join (effectively a cross product). Without an explicit broadcast hint, Spark may shuffle the small side instead of broadcasting it. On serverless compute, you cannot tune `spark.sql.autoBroadcastJoinThreshold`. Broadcast boundaries, neighborhoods, districts, or any reference table with < ~10K rows.
+
 ```sql
 -- Find all stores within each sales territory
 -- NOTE: Use ST_GEOMFROMWKB (not ST_GEOGFROMWKB) — ST_CONTAINS requires GEOMETRY type
-SELECT t.territory_name, s.store_name
+SELECT /*+ BROADCAST(t) */ t.territory_name, s.store_name
 FROM territories t
 JOIN stores s
   ON ST_CONTAINS(
     ST_GEOMFROMWKB(t.geometry),
     ST_POINT(s.longitude, s.latitude)
   );
+```
+
+PySpark equivalent:
+```python
+from pyspark.sql import functions as F
+
+result = points.join(
+    F.broadcast(boundaries),
+    F.expr("ST_CONTAINS(ST_GEOMFROMWKB(boundary_geom), ST_POINT(longitude, latitude))")
+)
 ```
 
 ---

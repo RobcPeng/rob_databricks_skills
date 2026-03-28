@@ -41,6 +41,7 @@ rob_skills/
 | `databricks-free-tier-guardrails` | OFF | Serverless/free tier compatibility filter |
 | `data-api-poc-builder` | OFF | POC builder for external data sources (requires Kafka/PG/Neo4j) |
 | `databricks-governance` | ON | Unity Catalog governance: RBAC, ABAC, tagging, masking, audit, compliance |
+| `databricks-pipeline-guardrails` | ON | Qualified names, table existence checks, schema contracts, broadcast hints, union alignment |
 | `update-skills-from-lessons` | OFF | Scan practice lessons and suggest updates to custom skills |
 
 ## Working With This Repo

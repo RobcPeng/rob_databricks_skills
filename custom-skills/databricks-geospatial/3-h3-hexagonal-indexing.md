@@ -92,6 +92,14 @@ SELECT H3_POINTASH3STRING(ST_POINT(-122.4194, 37.7749), 9) AS h3_cell;
 
 ### Converting H3 Back to Geometry
 
+> **⚠️ `H3_CENTERASLAT` / `H3_CENTERASLNG` do not exist in Databricks SQL.** These are `h3-py` Python library functions, not Databricks built-in functions. To extract lat/lon from an H3 cell, use `H3_CENTERASGEOJSON` and parse with `GET_JSON_OBJECT`. Note: GeoJSON coordinate order is `[lon, lat]`, so `coordinates[0]` = longitude, `coordinates[1]` = latitude:
+> ```sql
+> SELECT
+>   GET_JSON_OBJECT(H3_CENTERASGEOJSON(h3_cell), '$.coordinates[1]') AS lat,
+>   GET_JSON_OBJECT(H3_CENTERASGEOJSON(h3_cell), '$.coordinates[0]') AS lon
+> FROM my_table;
+> ```
+
 ```sql
 -- Cell center as WKT
 SELECT H3_CENTERASWKT('8928308280fffff') AS center;
