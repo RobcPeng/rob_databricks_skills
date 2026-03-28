@@ -20,6 +20,9 @@ rob_skills/
 │   ├── dbldatagen/
 │   ├── databricks-geospatial/
 │   ├── databricks-free-tier-guardrails/
+│   ├── databricks-governance/
+│   ├── databricks-pipeline-guardrails/
+│   ├── databricks-screenshot-docs/
 │   └── update-skills-from-lessons/
 ├── update.sh                # One script: pull + install + custom skills + Genie Code deploy
 ├── CLAUDE.md.example        # Template for project-level CLAUDE.md (copy and fill in paths)
@@ -135,6 +138,46 @@ Generate large-scale synthetic data using [Databricks Labs dbldatagen](https://g
 
 Compatibility filter applied after other generation skills to ensure artifacts work on Databricks free tier (serverless compute only). Checks for banned APIs, library availability, and cluster configuration restrictions.
 
+### databricks-governance
+
+Comprehensive Unity Catalog governance skill covering access control (RBAC/ABAC), tagging, classification, column masking, row filters, audit logging, lineage, and compliance frameworks.
+
+| Topic | File |
+|-------|------|
+| Governance Foundations | `1-governance-foundations.md` |
+| Access Control (RBAC) | `2-access-control-rbac.md` |
+| Tagging & Classification | `3-tagging-classification.md` |
+| Row Filters & Column Masks | `4-row-filters-column-masks.md` |
+| ABAC Policies | `5-abac-policies.md` |
+| Audit, Lineage & Compliance | `6-audit-lineage-compliance.md` |
+
+### databricks-pipeline-guardrails
+
+Quality guardrails for Databricks pipeline code — prevents common failures when building multi-layer ETL.
+
+| Guardrail | What It Prevents |
+|-----------|-----------------|
+| Fully qualified table names | `TABLE_OR_VIEW_NOT_FOUND` from unqualified cross-schema references |
+| Table existence verification | Runtime failures from typos or missing dependencies |
+| Schema contracts | Column name mismatches between bronze/silver/gold layers |
+| Broadcast hints | Cartesian explosions on spatial and non-equi joins |
+| Union alignment | Schema mismatches when combining streaming + batch sources |
+
+### databricks-screenshot-docs
+
+Playwright-based screenshot capture for documentation, blog posts, demos, and presentations of Databricks applications.
+
+| Section | Coverage |
+|---------|----------|
+| Viewport presets | 8 size presets for blog, docs, dashboards, social, presentations |
+| Content readiness | Wait strategies for tables, charts, maps, spinners per framework |
+| Maps | Zoom guidelines, tile-load waits, programmatic viewport control |
+| Dashboards | Hiding UI chrome, composition rules, element-level screenshots |
+| Pipelines | DAG views, event logs, data quality tabs |
+| Jobs | Run history, task DAGs, task output/logs |
+| Notebooks | Code + output cells, visualization cells, toolbar hiding |
+| Readability | Zoom levels by display context, data table row limits |
+
 ### update-skills-from-lessons
 
 Scans a lessons-learned directory for practice session notes and suggests targeted updates to custom skills. The lessons path is provided by `CLAUDE.md` (not hardcoded in the skill). Only modifies custom skills — never touches AI Dev Kit skills or installed copies.
@@ -185,6 +228,38 @@ for skill in custom-skills/*/; do
     cp -r "$skill" .claude/skills/$(basename "$skill")
 done
 ```
+
+## Changelog
+
+### 2026-03-27
+
+- **New skill: `databricks-screenshot-docs`** — Playwright-based screenshot capture for docs, blogs, demos. Viewport presets, map/chart wait strategies, dashboard composition, pipeline DAG views, job run history, notebook cell captures, readability/zoom guidelines.
+- **New skill: `databricks-pipeline-guardrails`** — Quality checks for pipeline code: fully qualified table names, table existence verification, schema contracts for multi-layer builds, broadcast hints for non-equi joins, union schema alignment.
+- **New skill: `databricks-governance`** — Comprehensive Unity Catalog governance: RBAC, ABAC tag-based policies, tagging/classification, column masks, row filters, audit logging, lineage, compliance frameworks (FERPA, HIPAA, SOC2, FedRAMP).
+- **Lessons applied to `databricks-geospatial`:**
+  - Broadcast hint warning for spatial joins (`ST_CONTAINS`, `ST_INTERSECTS`) in `2-spatial-sql-functions.md`
+  - `H3_CENTERASLAT`/`H3_CENTERASLNG` don't exist warning + `GET_JSON_OBJECT` extraction pattern in `3-h3-hexagonal-indexing.md`
+- **Lessons applied to `databricks-governance`:**
+  - SDP streaming tables and materialized views don't support column masks/row filters in `4-row-filters-column-masks.md`
+- **Lessons applied to `databricks-free-tier-guardrails`:**
+  - `ai_classify` and `ai_forecast` confirmed working on Serverless Starter Warehouse
+- **Lessons applied to `data-api-poc-builder`:**
+  - Stale Kafka messages warning after generator restart
+  - Batch Kafka reads: `startingOffsets` cannot be `"latest"`
+
+### 2026-03-26
+
+- **New skill: `databricks-governance`** — Initial creation with 6 reference files covering governance foundations through compliance.
+
+### Earlier
+
+- `databricks-geospatial`: Updated Overture Maps release to `2026-02-18.0`, added GEOGRAPHY vs GEOMETRY type mismatch warning, added keplergl serverless/local install warning.
+- `update-skills-from-lessons`: Added skill for scanning practice lessons and suggesting custom skill updates.
+- `update.sh`: Hardened for bash 3.2 (macOS), added interactive custom skill selection, Genie Code deploy, stale skill cleanup.
+- `dbldatagen`: Added Faker alternative approach with Pandas UDFs.
+- `data-api-poc-builder`: Restricted to explicit invocation only (no ambient keyword triggering).
+- `databricks-free-tier-guardrails`: Initial creation — serverless/Spark Connect compatibility filter.
+- Initial skills: `spark-job-optimization`, `databricks-geospatial`, `dbldatagen`, `databricks-practice-skill`.
 
 ## License
 
